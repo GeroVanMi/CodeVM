@@ -5,7 +5,7 @@
 Packages available to the `agent` user inside the VM are declared in
 [`nix/packages.nix`](../nix/packages.nix), a plain list of Nix package names.
 The current list is claude-code, pi-coding-agent, git, gh, ripgrep, fd, jq,
-curl, neovim, nodejs, python3, and zoxide.
+curl, neovim, nodejs, python3, zoxide, unzip, and gcc.
 
 To add or remove a package, edit `nix/packages.nix` on the host and run
 `codevm sync` (see [usage](usage.md#sync)). Sync resets the `agent` user's Nix
