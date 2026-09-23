@@ -1,0 +1,70 @@
+# CodeVM: isolated Lima VM for coding agents. See HANDOVER.md / documentation/.
+vmType: vz
+arch: aarch64
+cpus: 6
+memory: 12GiB
+disk: 100GiB
+
+# Ubuntu 26.04 LTS, copied from Lima 2.2.0's bundled ubuntu-26.04 template.
+images:
+- location: "https://cloud-images.ubuntu.com/releases/resolute/release-20260720/ubuntu-26.04-server-cloudimg-arm64.img"
+  arch: "aarch64"
+  digest: "sha256:7bcf159e29ad0000bfed9c57875908c39268f5ed1257f4958fa6a9f5f60edd54"
+  variant: "server"
+# Fallback to the latest release (no digest), as in Lima's own template.
+- location: "https://cloud-images.ubuntu.com/releases/resolute/release/ubuntu-26.04-server-cloudimg-arm64.img"
+  arch: "aarch64"
+  variant: "server"
+
+# Zero host mounts: code moves only via git.
+mounts: []
+
+ssh:
+  forwardAgent: false
+
+containerd:
+  system: false
+  user: false
+
+# Runs on every boot, so every step must be idempotent.
+provision:
+- mode: system
+  script: |
+    #!/bin/bash
+    set -eux -o pipefail
+
+    # 1. Base packages
+    missing=()
+    for p in nftables git curl; do
+      dpkg-query -W -f='${Status}' "$p" 2>/dev/null | grep -q 'install ok installed' || missing+=("$p")
+    done
+    if [ "${#missing[@]}" -gt 0 ]; then
+      export DEBIAN_FRONTEND=noninteractive
+      apt-get update
+      apt-get install -y "${missing[@]}"
+    fi
+
+    # 2. Unprivileged agent user (no sudo/admin)
+    id agent >/dev/null 2>&1 || useradd -m -s /bin/bash agent
+    install -d -o agent -g agent /home/agent/projects
+
+    # 2b. No sudo pty relay when root/admin runs commands as agent (Warp DCS hook).
+    #     Validated with visudo before install so a bad file can't break sudo.
+    t=$(mktemp)
+    printf '%s\n' '# codevm-managed: no pty relay for commands run as agent (Warp)' 'Defaults>agent !use_pty' > "$t"
+    if visudo -cf "$t" >/dev/null; then
+      install -m 0440 -o root -g root "$t" /etc/sudoers.d/90-codevm-agent-nopty
+    fi
+    rm -f "$t"
+
+    # 3. Nix (Determinate installer, multi-user daemon, flakes on)
+    if [ ! -d /nix ]; then
+      curl -fsSL https://install.determinate.systems/nix | sh -s -- install --no-confirm
+    fi
+
+    # 4. Firewall (config placed in /opt/codevm by `codevm sync`)
+    if [ -f /opt/codevm/firewall/codevm.nft ]; then
+      install -m 0644 -o root -g root /opt/codevm/firewall/codevm.nft /etc/nftables.conf
+      systemctl enable nftables
+      systemctl restart nftables
+    fi

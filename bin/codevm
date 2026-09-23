@@ -1,0 +1,175 @@
+#!/usr/bin/env bash
+# codevm — create/enter/sync/destroy the isolated coding-agent Lima VM.
+set -euo pipefail
+
+# Resolve the real script path (symlink-safe, no GNU readlink needed).
+src="$0"
+while [ -L "$src" ]; do
+  dir="$(cd -P "$(dirname "$src")" && pwd)"
+  src="$(readlink "$src")"
+  case "$src" in /*) ;; *) src="$dir/$src" ;; esac
+done
+REPO="$(cd -P "$(dirname "$src")/.." && pwd)"
+VM=codevm
+STAGE=/tmp/codevm-sync
+
+usage() {
+  cat >&2 <<USAGE
+usage: codevm [sync|destroy|rebuild]
+  (none)    create VM if missing, start if stopped, open a shell as agent in ~/projects
+  sync      push repo config into the VM and apply it
+  destroy   delete the VM (lists dirty repos, asks for confirmation)
+  rebuild   destroy, then create and sync from scratch
+USAGE
+}
+
+status() { limactl list --format '{{.Status}}' "$VM" 2>/dev/null || true; }
+
+# Run a bash script (stdin) in the VM as the Lima admin user.
+vm_admin() { limactl shell --workdir / "$VM" bash -s; }
+# Run a bash script (stdin) in the VM as agent.
+vm_agent() { limactl shell --workdir / "$VM" sudo -u agent -H bash -l -s; }
+
+ensure_running() {
+  case "$(status)" in
+    Running) ;;
+    "") echo "codevm: VM '$VM' does not exist; run 'codevm' to create it" >&2; exit 1 ;;
+    *) limactl start "$VM" ;;
+  esac
+}
+
+create() {
+  limactl start --name="$VM" --tty=false "$REPO/lima/codevm.yaml"
+  sync
+}
+
+sync() {
+  # 1. Ensure running
+  ensure_running
+
+  # 2. Stage files
+  vm_admin <<SH
+set -euo pipefail
+sudo rm -rf $STAGE
+mkdir -p $STAGE
+SH
+  local p
+  for p in nix firewall home extra-packages.sh config.env; do
+    limactl copy -r "$REPO/$p" "$VM:$STAGE/"
+  done
+
+  # 3. Install into /opt/codevm (root-owned, agent read-only)
+  # 4. Firewall (mirrors the provision script in lima/codevm.yaml)
+  vm_admin <<SH
+set -euo pipefail
+sudo rsync -a --delete --exclude '/lost+found' $STAGE/ /opt/codevm/
+sudo chown -R root:root /opt/codevm
+sudo find /opt/codevm -type d -exec chmod 0755 {} +
+sudo find /opt/codevm -type f -exec chmod 0644 {} +
+sudo chmod 0755 /opt/codevm/extra-packages.sh
+sudo nft -f /opt/codevm/firewall/codevm.nft
+sudo install -m 0644 -o root -g root /opt/codevm/firewall/codevm.nft /etc/nftables.conf
+sudo systemctl enable nftables
+sudo systemctl restart nftables
+t=\$(mktemp)
+printf '%s\\n' '# codevm-managed: no pty relay for commands run as agent (Warp)' 'Defaults>agent !use_pty' > "\$t"
+sudo visudo -cf "\$t" >/dev/null
+sudo install -m 0440 -o root -g root "\$t" /etc/sudoers.d/90-codevm-agent-nopty
+rm -f "\$t"
+SH
+
+  # 5a. First run only: generate flake.lock in a writable copy, copy it back to host.
+  if [ ! -f "$REPO/nix/flake.lock" ]; then
+    echo "codevm: nix/flake.lock missing, generating it once"
+    vm_agent <<'SH'
+set -euo pipefail
+rm -rf /tmp/codevm-lock
+cp -r /opt/codevm/nix /tmp/codevm-lock
+chmod -R u+w /tmp/codevm-lock
+nix flake lock /tmp/codevm-lock
+chmod 0755 /tmp/codevm-lock
+chmod 0644 /tmp/codevm-lock/flake.lock
+SH
+    limactl copy "$VM:/tmp/codevm-lock/flake.lock" "$REPO/nix/flake.lock"
+    vm_admin <<'SH'
+set -euo pipefail
+sudo install -m 0644 -o root -g root /tmp/codevm-lock/flake.lock /opt/codevm/nix/flake.lock
+sudo rm -rf /tmp/codevm-lock
+SH
+  fi
+
+  # 5b-7. As agent: reset profile, extras, shell hook, git identity.
+  vm_agent <<'SH'
+set -euo pipefail
+nix profile remove --regex '.*' 2>/dev/null || true
+nix profile add --no-write-lock-file /opt/codevm/nix#default
+/opt/codevm/extra-packages.sh
+install -d -m 0755 ~/.bashrc.d
+install -m 0644 /opt/codevm/home/bashrc.d/codevm.sh ~/.bashrc.d/codevm.sh
+touch ~/.bashrc
+sed -i '/# codevm-managed/d' ~/.bashrc
+echo '[ -f ~/.bashrc.d/codevm.sh ] && . ~/.bashrc.d/codevm.sh # codevm-managed' >> ~/.bashrc
+# shellcheck disable=SC1091
+. /opt/codevm/config.env
+git config --global user.name "$GIT_USER_NAME"
+git config --global user.email "$GIT_USER_EMAIL"
+SH
+  echo "codevm: sync complete"
+}
+
+enter() {
+  case "$(status)" in
+    "") create ;;
+    Running) ;;
+    *) limactl start "$VM" ;;
+  esac
+  exec limactl shell --workdir / "$VM" sudo -u agent -H bash -lc 'cd ~/projects && exec bash -l'
+}
+
+destroy() {
+  local st
+  st="$(status)"
+  if [ -z "$st" ]; then
+    echo "codevm: VM '$VM' does not exist" >&2
+    return 0
+  fi
+  if [ "$st" = Running ]; then
+    echo "Checking ~/projects for uncommitted changes or unpushed commits..."
+    local dirty
+    dirty="$(vm_agent <<'SH'
+for g in ~/projects/*/.git; do
+  [ -d "$g" ] || continue
+  r="${g%/.git}"
+  if [ -n "$(git -C "$r" status --porcelain 2>/dev/null)" ] ||
+     [ -n "$(git -C "$r" log --branches --not --remotes --oneline 2>/dev/null)" ]; then
+    echo "$r"
+  fi
+done
+SH
+)"
+    if [ -n "$dirty" ]; then
+      echo "Dirty repos (will be LOST):"
+      printf '%s\n' "$dirty" | sed 's/^/  /'
+    else
+      echo "No dirty repos found."
+    fi
+  else
+    echo "VM is $st; cannot check for dirty repos."
+  fi
+  local answer=""
+  read -r -p "Type 'codevm' to permanently delete the VM: " answer || true
+  if [ "$answer" != codevm ]; then
+    echo "codevm: aborted" >&2
+    exit 1
+  fi
+  limactl delete -f "$VM"
+}
+
+case "${1-}" in
+  "") enter ;;
+  sync) sync ;;
+  destroy) destroy ;;
+  rebuild) destroy; create ;;
+  -h|--help|help) usage; exit 0 ;;
+  *) usage; exit 2 ;;
+esac

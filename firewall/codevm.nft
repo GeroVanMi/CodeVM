@@ -1,0 +1,25 @@
+#!/usr/sbin/nft -f
+# CodeVM egress firewall: allow internet, block host / LAN / private ranges.
+# Under Lima vz, the gateway AND DNS server are both 192.168.5.2 (verified via
+# `ip route` / `resolvectl status`); there is no separate 192.168.5.3.
+
+# Idempotent re-apply: create if missing, then flush.
+table inet codevm {}
+flush table inet codevm
+
+table inet codevm {
+  chain output {
+    type filter hook output priority 0; policy accept;
+
+    oif lo accept
+    ct state established,related accept      # REQUIRED: SSH replies go to the gw 192.168.5.2
+
+    # --- allowlist (extend here) ---
+    ip daddr 192.168.5.2 udp dport 53 accept  # DNS (vz gw)
+    ip daddr 192.168.5.2 tcp dport 53 accept
+    meta l4proto ipv6-icmp accept            # NDP
+
+    ip daddr { 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16, 100.64.0.0/10 } drop
+    ip6 daddr { fc00::/7, fe80::/10 } drop
+  }
+}
