@@ -34,3 +34,5 @@ This leaves `use_pty` intact for every other sudo invocation on the box. A blank
 ## In this repo specifically
 
 `bin/codevm sync` already contains a working example of this whole pattern (temp file → `visudo -cf` → `install -m 0440`) — read that function before writing a new one from scratch. If the change should survive a VM rebuild, it needs to live in the `lima/codevm.yaml` provision script (idempotent, since that script reruns on every boot) as well as in `sync`.
+
+After applying, run `bin/codevm-test`.

@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# codevm-test — run the Command Checks against the disposable Test VM (host only).
+set -euo pipefail
+
+REPO="$(cd -P "$(dirname "$0")/.." && pwd)"
+export CODEVM_NAME="${CODEVM_TEST_NAME:-codevm-test}"
+VM="$CODEVM_NAME"
+
+die() { echo "codevm-test: $*" >&2; exit 1; }
+command -v limactl >/dev/null 2>&1 || die "limactl not found"
+command -v bats >/dev/null 2>&1 || die "bats not found (brew install bats-core)"
+[ "$VM" != codevm ] || die "refusing to run against the 'codevm' VM"
+
+exists() { [ -n "$(limactl list --format '{{.Name}}' "$VM" 2>/dev/null)" ]; }
+
+create() { limactl start --name="$VM" --tty=false "$REPO/lima/codevm.yaml"; }
+
+check() {
+  exists || create
+  "$REPO/bin/codevm" sync
+  bats "$REPO/tests/commands/"
+}
+
+case "${1:-fast}" in
+  fast) check ;;
+  full)
+    if exists; then CODEVM_DESTROY_YES=1 "$REPO/bin/codevm" destroy; fi
+    check ;;
+  stop) limactl stop "$VM" ;;
+  *) echo "usage: codevm-test [fast|full|stop]" >&2; exit 2 ;;
+esac

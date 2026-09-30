@@ -3,7 +3,8 @@
 ## Nix packages
 
 Packages available to the `agent` user inside the VM are declared in
-[`nix/packages.nix`](../nix/packages.nix), a plain list of Nix package names.
+[`nix/packages.nix`](../nix/packages.nix), a list of Nix package names grouped by comments. Each group has a matching
+file of checks in `tests/commands/` (see [testing](testing.md)).
 The current list is claude-code, pi-coding-agent, git, gh, ripgrep, fd, jq,
 curl, neovim, nodejs, python3, zoxide, unzip, and gcc.
 

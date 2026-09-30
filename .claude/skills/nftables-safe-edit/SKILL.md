@@ -39,3 +39,5 @@ Don't trust a rule until you've watched it actually block or allow traffic. The 
 ## Finding the real gateway/DNS IPs
 
 Don't assume Lima's usual `192.168.5.2`/`192.168.5.3` split. Under vz on this host, gateway and DNS turned out to be the *same* IP (`192.168.5.2`). Verify with `ip route` and `resolvectl status` (or `/etc/resolv.conf`) inside the guest before writing IP-specific rules, and note in a comment if they diverge from the usual assumption.
+
+After applying, run `bin/codevm-test`.

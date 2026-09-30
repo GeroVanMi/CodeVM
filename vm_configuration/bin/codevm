@@ -10,7 +10,7 @@ while [ -L "$src" ]; do
   case "$src" in /*) ;; *) src="$dir/$src" ;; esac
 done
 REPO="$(cd -P "$(dirname "$src")/.." && pwd)"
-VM=codevm
+VM="${CODEVM_NAME:-codevm}"
 STAGE=/tmp/codevm-sync
 
 usage() {
@@ -157,6 +157,11 @@ SH
     echo "VM is $st; cannot check for dirty repos."
   fi
   local answer=""
+  # Non-interactive bypass for disposable VMs (e.g. the test VM); never for codevm.
+  if [ "${CODEVM_DESTROY_YES-}" = 1 ] && [ "$VM" != codevm ]; then
+    limactl delete -f "$VM"
+    return 0
+  fi
   read -r -p "Type 'codevm' to permanently delete the VM: " answer || true
   if [ "$answer" != codevm ]; then
     echo "codevm: aborted" >&2

@@ -38,3 +38,5 @@ Edit `nix/packages.nix` (a plain list passed to `pkgs.buildEnv`), then `codevm s
 ## Deliberately bumping the lock
 
 There's no `codevm update` command yet (see `documentation/packages.md`) — bumping `nixpkgs` to pick up newer package versions is currently a manual step: run `nix flake update` in a writable copy inside the VM, then copy the new `flake.lock` back to the host and commit it. Treat this as a distinct, deliberate action, not something that happens as a byproduct of an unrelated sync.
+
+After applying, run `bin/codevm-test`.
