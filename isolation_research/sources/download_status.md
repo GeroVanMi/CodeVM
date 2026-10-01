@@ -1,19 +1,22 @@
 # Download Status
 
 Step 2 of the [research plan](../isolation_research_plan.md), run on 2026-10-01.
-All 103 sources in `sources.csv` (P-001..P-058, R-001..R-034, S-001..S-011) were attempted once.
+All 102 sources in `sources.csv` (P-001..P-058 without P-045, R-001..R-034, S-001..S-011) were attempted once. P-045 was removed deliberately (talk without written source).
 
 ## Counts
 
-- Fetched OK: 99
-- Flagged (clean text below 1,500 chars): 4 (P-038, P-045, S-002, S-004). Details in `manual_check.md`.
+- OK after normalization: 102 (`manual_check.md` is empty)
+- Flagged (clean text below 1,500 chars): 0. Previously flagged: P-038 (fixed by the embedded-JSON fallback), S-002 and S-004 (manual copies placed by the user, `changed` = yes in `manifest.csv`).
 - Flagged for other reasons (HTTP error, robots.txt, known-bad domain, PDF garbage): 0
 - Excluded for licensing: 0 (every source has `license_status` `ok`)
 
 ## Notes
 
 - `sources.csv` was generated once by `../scripts/md_to_csv.py`; it refuses to overwrite without `--force`. Edit the CSV directly from now on.
-- S-004: the URL cell in `sources.md` held three URLs. The CSV keeps the CISA URL; the Canadian HTML and Australian PDF copies are in `license_note`. The CISA page yields only 607 chars.
+- S-004: the URL cell in `sources.md` held three URLs. The CSV keeps the CISA URL; the Canadian HTML and Australian PDF copies are in `license_note`. The automatic CISA fetch yielded only 607 chars; the user placed a saved copy at `corpus/S-004/raw.html` (the `raw_files/` folder beside it is ignored), now about 62,000 chars.
+- Extraction fallback: if trafilatura yields under 2,000 chars, the script takes the longest string from the page's embedded JSON (`__NEXT_DATA__`, JSON-LD, other `application/json` scripts) when it is over 3 times longer, and records `embedded-json` as `extraction_method`. Only P-038 (stripe.dev, client-rendered Next.js) uses it.
+- For manually placed files, `fetch_date`, `http_status` and `final_url` stay as recorded by the original automatic fetch.
+- Thin but full-text pages (about 1,700 to 1,900 chars): P-016, P-018, P-046, P-049, S-010.
 - URL rewrites: arXiv URLs fetch the PDF, GitHub repo and blob URLs fetch the raw README or file, Hacker News items use the Algolia API (thread as JSON, comments flattened), the CVE record is stored as JSON.
 
 ## How to Re-run
@@ -30,5 +33,4 @@ To re-download a source, delete `corpus/<ID>/` first; the `changed` column in `m
 
 ## Unfinished
 
-- Manual downloads for the 4 flagged sources (see `manual_check.md`).
 - The venv is at `isolation_research/.venv` (gitignored); recreate with `python3 -m venv .venv && .venv/bin/pip install trafilatura pymupdf requests`.

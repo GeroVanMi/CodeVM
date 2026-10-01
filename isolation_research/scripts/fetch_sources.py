@@ -146,7 +146,46 @@ def normalize(d):
         return "plain", data, raw
     text = trafilatura.extract(data, output_format="markdown", include_links=True,
                                include_tables=True, favor_recall=True) or ""
+    if len(text) < FALLBACK_CHARS:
+        alt = embedded_json_text(data)
+        if alt and len(alt) > max(3 * len(text), 1000):
+            return "embedded-json", alt, raw
     return "trafilatura", text, raw
+
+
+FALLBACK_CHARS = 2000  # below this, try the embedded-JSON fallback
+
+
+def embedded_json_text(html):
+    """Fallback for client-rendered pages (Next.js __NEXT_DATA__, JSON-LD articleBody, other
+    application/json payloads) whose body text is not in the DOM. Returns the longest string
+    found in any embedded JSON script, rendered to markdown if it is HTML, or ''."""
+    best, title = "", ""
+    for m in re.finditer(r'<script[^>]*type="application/(?:ld\+)?json"[^>]*>(.*?)</script>', html, re.S | re.I):
+        try:
+            obj = json.loads(m.group(1))
+        except ValueError:
+            continue
+        stack = [obj]
+        while stack:
+            o = stack.pop()
+            if isinstance(o, dict):
+                t = o.get("title") or o.get("headline") or o.get("name")
+                for v in o.values():
+                    if isinstance(v, str) and len(v) > len(best):
+                        best, title = v, t if isinstance(t, str) and t != v else ""
+                    else:
+                        stack.append(v)
+            elif isinstance(o, list):
+                stack.extend(o)
+            elif isinstance(o, str) and len(o) > len(best):
+                best = o
+    if re.search(r"<(p|div|h[1-6])[\s>]", best):
+        best = trafilatura.extract(f"<html><body><article>{best}</article></body></html>",
+                                   output_format="markdown", include_links=True,
+                                   include_tables=True, favor_recall=True) or ""
+    best = best.strip()
+    return (f"# {title}\n\n{best}" if title and best else best)
 
 
 def load_manifest():
