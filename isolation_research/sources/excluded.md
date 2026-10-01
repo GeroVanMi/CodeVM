@@ -82,3 +82,4 @@ These report on a kept original, so the original is cited instead.
 | Forward citations of R-002 not opened: ROPE (2608.27496), When Tool Outputs Become Commands (2608.27146), Twin Agent (2607.19595), Prismata (2607.08147), GIF (2606.23277), LACUNA (2605.28617), Janus (2607.01510), STARS (2604.10286) | Titles only from the Semantic Scholar list; not opened within budget. Revisit. |
 | Steerability via constraints (2607.02389) | Title and snippet only; not opened. |
 | WebCloak (IEEE S&P 2026), ExpShield (NDSS 2026) | Web scraping defenses; off-topic. |
+| Joy Heron (INNOQ), "I Sandboxed My Coding Agents. You Should Too." (P-045, talk, 2026-03) | Removed in Step 2: talk page only, no written source to extract. |
