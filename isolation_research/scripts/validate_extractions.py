@@ -9,6 +9,7 @@ dashes, ligatures, soft hyphens, PDF line-break hyphenation).
 Usage:
   validate_extractions.py                     # all records
   validate_extractions.py --ids P-001 R-007   # selected records
+  validate_extractions.py --dir sources/extractions/pilot_v1  # another record folder
   validate_extractions.py --record F --clean C  # one file pair (tests/driver)
   validate_extractions.py --sync-schema       # write vocabulary enums into schema.json
 
@@ -25,7 +26,12 @@ ROOT = Path(__file__).resolve().parent.parent
 EXTRACTION = ROOT / "extraction"
 SOURCES = ROOT / "sources"
 VOCAB_SECTIONS = {"practice_tag": "practice_tags", "threat_tag": "threat_tags",
-                  "evidence_type": "evidence_types", "author_role": "author_roles"}
+                  "evidence_type": "evidence_types", "author_role": "author_roles",
+                  "asset_tag": "asset_tags", "channel_tag": "channel_tags",
+                  "contested_topic": "contested_topics",
+                  # fixed lists (no other:)
+                  "qualifier": "qualifiers", "claim_kind": "claim_kinds",
+                  "boundary_strength": "boundary_strengths"}
 
 _CHAR_MAP = {
     **{c: '"' for c in "“”„‟«»″〝〞"},
@@ -42,7 +48,9 @@ def normalize(text: str) -> str:
     """Normalize text so verbatim quotes survive PDF/HTML extraction quirks."""
     text = unicodedata.normalize("NFKC", text)  # ligatures (fi, fl), full-width forms
     text = text.translate(_TRANS)
-    text = re.sub(r"(?<=\w)-\s*\n\s*(?=\w)", "", text)  # "exam-\nple" -> "example"
+    # Keep the hyphen at a line break: "AI-\ngenerated" -> "AI-generated" (exact
+    # match); split words like "exam-\nple" match via quote_in's hyphen-insensitive fallback.
+    text = re.sub(r"(?<=\w)-[ \t]*\n\s*(?=\w)", "-", text)
     text = re.sub(r"[*_`]+", "", text)  # markdown emphasis/code markers
     text = re.sub(r"\s+", " ", text)
     return text.strip()
@@ -78,7 +86,8 @@ def load_schema(schema_path=EXTRACTION / "schema.json", vocab_path=EXTRACTION / 
     schema = json.loads(Path(schema_path).read_text())
     vocab = yaml.safe_load(Path(vocab_path).read_text())
     for d, section in VOCAB_SECTIONS.items():
-        schema["$defs"][d]["anyOf"][0]["enum"] = sorted(vocab[section])
+        target = schema["$defs"][d]
+        (target["anyOf"][0] if "anyOf" in target else target)["enum"] = sorted(vocab[section])
     return schema
 
 
@@ -94,6 +103,9 @@ def iter_quotes(rec):
             for i, e in enumerate(tm.get(key) or []):
                 if isinstance(e, dict) and "quote" in e:
                     yield f"threat_model.{key}[{i}]", e["quote"]
+    for i, c in enumerate(rec.get("contested_positions") or []):
+        if isinstance(c, dict) and "quote" in c:
+            yield f"contested_positions[{i}]", c["quote"]
 
 
 def validate_record(record_path, clean_path, validator, expected_id=None):
@@ -121,6 +133,8 @@ def validate_record(record_path, clean_path, validator, expected_id=None):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--ids", nargs="*")
+    ap.add_argument("--dir", default=str(SOURCES / "extractions"),
+                    help="record directory (default sources/extractions; subfolders such as pilot_v1/ are ignored)")
     ap.add_argument("--record")
     ap.add_argument("--clean")
     ap.add_argument("--sync-schema", action="store_true")
@@ -139,7 +153,7 @@ def main(argv=None):
             ap.error("--record needs --clean")
         pairs = [(Path(a.record).stem, Path(a.record), Path(a.clean))]
     else:
-        recs = sorted((SOURCES / "extractions").glob("*.yaml"))
+        recs = sorted(Path(a.dir).glob("*.yaml"))  # non-recursive
         if a.ids:
             recs = [p for p in recs if p.stem in set(a.ids)]
             missing = set(a.ids) - {p.stem for p in recs}

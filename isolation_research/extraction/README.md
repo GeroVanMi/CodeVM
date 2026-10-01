@@ -8,7 +8,8 @@ Files:
   current vocabulary, the sync only keeps the file readable).
 - `vocabulary.yaml`: seed tags. Anything else is written `other:<text>`.
 - `prompt.md`: extractor prompt template, filled by the driver.
-- `pilot.md`: pilot IDs and command.
+- `pilot.md`: pilot IDs, status, and re-run command.
+- `pilot_review.md`: review of the first pilot (v1) and the changes it led to.
 - `tests/`: validator unit tests and fixture.
 
 ## Setup inside CodeVM
@@ -39,13 +40,32 @@ For each pilot record, compare against the source: missed recommendations,
 wrong stances, tags forced into a poor fit, frequent `other:` values (promote
 them into `vocabulary.yaml`), unhelpful fields. Revise `vocabulary.yaml`,
 `schema.json`, and `prompt.md`, delete the pilot records, and re-run until
-satisfied. Choose the full-run model by comparing a cheaper model on the same
-IDs (`--model <model>` writes the same paths, so move the opus records aside first).
+satisfied. To keep an earlier round for comparison, move its records into a
+subfolder (as with `sources/extractions/pilot_v1/`); the driver and validator
+only look at the top level of `sources/extractions/`. Full-run model: Opus
+(`claude-opus-5-5`), per `pilot_review.md`.
+
+## Record fields added after the pilot
+
+- `qualifier` (optional): `weakening-option`, `default-config`, `as-sole-control`,
+  `future-work`. A warning against a weakening option of an endorsed practice is
+  `recommends` + `weakening-option`, not `rejects`.
+- `claim_kind` (optional): `recommendation`, `limitation`, `measured-result`;
+  lets Step 4 collapse several entries per practice.
+- `boundary_strength` (optional, RQ2 entries): `security-boundary`,
+  `defense-in-depth`, `convenience`, `unstated`.
+- `threats` may be empty; non-security design choices are not extracted.
+- `threat_model.framework`: short name in `value`, explanation in `details`.
+- `threat_model.assets[].tag` and `input_channels[].tag` (required): from
+  `asset_tags` / `channel_tags`, or `other:<text>`.
+- `contested_positions[]` (optional): `topic` from `contested_topics` (the Step 5
+  contested points plus host-delayed execution), `position`, `quote`, `location`.
+- `date_normalized` (optional): `YYYY`, `YYYY-MM` or `YYYY-MM-DD`.
 
 ## Full run and resume
 
 ```sh
-scripts/extract_driver.py --model <model>
+scripts/extract_driver.py --model claude-opus-5-5
 ```
 
 The driver skips IDs that already have `sources/extractions/<ID>.yaml`, so
@@ -63,6 +83,7 @@ there and not run. Raw `claude` output goes to `sources/extractions/_logs/`
 ```sh
 .venv/bin/python scripts/validate_extractions.py            # all records
 .venv/bin/python scripts/validate_extractions.py --ids P-002
+.venv/bin/python scripts/validate_extractions.py --dir sources/extractions/pilot_v1
 .venv/bin/python -m unittest discover -s extraction/tests   # self-test
 ```
 

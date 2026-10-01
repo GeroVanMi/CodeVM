@@ -89,21 +89,21 @@
               "type": "null"
             },
             {
-              "$ref": "#/$defs/element"
+              "$ref": "#/$defs/framework"
             }
           ],
-          "description": "Named framework (e.g. lethal trifecta, OWASP, STRIDE) with quote, or null"
+          "description": "Named framework the source uses: short name in value, explanation in details; or null"
         },
         "assets": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/element"
+            "$ref": "#/$defs/asset"
           }
         },
         "input_channels": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/element"
+            "$ref": "#/$defs/input_channel"
           }
         },
         "failure_modes": {
@@ -116,6 +116,18 @@
     },
     "notes": {
       "type": "string"
+    },
+    "date_normalized": {
+      "type": "string",
+      "pattern": "^\\d{4}(-\\d{2}(-\\d{2})?)?$",
+      "description": "ISO date (YYYY, YYYY-MM, or YYYY-MM-DD) of publication or last update; omit if unknown"
+    },
+    "contested_positions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/contested_position"
+      },
+      "description": "Positions the source takes on the Step 5 contested points"
     }
   },
   "$defs": {
@@ -193,13 +205,22 @@
             "evaluates"
           ]
         },
+        "qualifier": {
+          "$ref": "#/$defs/qualifier"
+        },
+        "claim_kind": {
+          "$ref": "#/$defs/claim_kind"
+        },
+        "boundary_strength": {
+          "$ref": "#/$defs/boundary_strength"
+        },
         "summary": {
           "type": "string",
           "minLength": 1
         },
         "threats": {
           "type": "array",
-          "minItems": 1,
+          "minItems": 0,
           "items": {
             "$ref": "#/$defs/threat_tag"
           }
@@ -261,17 +282,22 @@
             "egress-deny-all",
             "egress-domain-allowlist",
             "egress-proxy-inspection",
+            "egress-restriction-unspecified",
             "filesystem-scoping",
             "gvisor-userspace-kernel",
             "harness-outside-sandbox",
             "harness-permissions",
             "human-in-the-loop",
+            "incident-response",
             "information-flow-control",
             "lethal-trifecta-avoidance",
             "mcp-tool-vetting",
+            "memory-integrity-controls",
             "microvm-vm",
+            "model-level-robustness",
             "multi-agent-trust-boundaries",
             "no-secrets-in-env",
+            "org-governance-training",
             "os-sandbox",
             "patching-updates",
             "pi-architectural-isolation",
@@ -280,10 +306,12 @@
             "red-teaming-evaluation",
             "remote-ephemeral-env",
             "resource-limits",
+            "sandbox-unspecified",
             "scoped-short-lived-tokens",
             "secret-scanning",
             "supply-chain-controls",
-            "untrusted-repo-config-handling"
+            "untrusted-repo-config-handling",
+            "vendor-disclosure-transparency"
           ]
         },
         {
@@ -302,6 +330,8 @@
             "destructive-action",
             "egress-bypass",
             "host-delayed-execution",
+            "lateral-movement",
+            "memory-poisoning",
             "misaligned-agent-behavior",
             "multi-agent-compromise",
             "permission-bypass",
@@ -363,6 +393,194 @@
         }
       ],
       "description": "From vocabulary.yaml author_roles or 'other:<text>'"
+    },
+    "asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "tag",
+        "quote"
+      ],
+      "properties": {
+        "value": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tag": {
+          "$ref": "#/$defs/asset_tag"
+        },
+        "quote": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Verbatim copy from clean.md"
+        },
+        "location": {
+          "type": "string"
+        }
+      }
+    },
+    "input_channel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "tag",
+        "quote"
+      ],
+      "properties": {
+        "value": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tag": {
+          "$ref": "#/$defs/channel_tag"
+        },
+        "quote": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Verbatim copy from clean.md"
+        },
+        "location": {
+          "type": "string"
+        }
+      }
+    },
+    "framework": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "quote"
+      ],
+      "properties": {
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60,
+          "description": "Short name, e.g. 'lethal trifecta', 'OWASP LLM Top 10'"
+        },
+        "quote": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Verbatim copy from clean.md"
+        },
+        "location": {
+          "type": "string"
+        },
+        "details": {
+          "type": "string"
+        }
+      }
+    },
+    "contested_position": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "topic",
+        "position",
+        "quote"
+      ],
+      "properties": {
+        "topic": {
+          "$ref": "#/$defs/contested_topic"
+        },
+        "position": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The source's position and its reason, one or two sentences"
+        },
+        "quote": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Verbatim copy from clean.md"
+        },
+        "location": {
+          "type": "string"
+        }
+      }
+    },
+    "asset_tag": {
+      "anyOf": [
+        {
+          "enum": [
+            "ci-cd-pipeline",
+            "cloud-infrastructure",
+            "host-system",
+            "internal-network",
+            "model-api-key",
+            "personal-data",
+            "secrets-credentials",
+            "source-code"
+          ]
+        },
+        {
+          "type": "string",
+          "pattern": "^other:\\S.*$"
+        }
+      ]
+    },
+    "channel_tag": {
+      "anyOf": [
+        {
+          "enum": [
+            "agent-memory",
+            "dependencies",
+            "issues-prs",
+            "messages-email",
+            "other-agents",
+            "repo-config",
+            "repo-content",
+            "tool-output",
+            "user-prompt",
+            "web-content"
+          ]
+        },
+        {
+          "type": "string",
+          "pattern": "^other:\\S.*$"
+        }
+      ]
+    },
+    "contested_topic": {
+      "anyOf": [
+        {
+          "enum": [
+            "egress-allowlist-sufficiency",
+            "harness-permissions-as-boundary",
+            "host-delayed-execution",
+            "pi-classifier-value",
+            "shared-kernel-vs-vm"
+          ]
+        },
+        {
+          "type": "string",
+          "pattern": "^other:\\S.*$"
+        }
+      ]
+    },
+    "qualifier": {
+      "enum": [
+        "as-sole-control",
+        "default-config",
+        "future-work",
+        "weakening-option"
+      ]
+    },
+    "claim_kind": {
+      "enum": [
+        "limitation",
+        "measured-result",
+        "recommendation"
+      ]
+    },
+    "boundary_strength": {
+      "enum": [
+        "convenience",
+        "defense-in-depth",
+        "security-boundary",
+        "unstated"
+      ]
     }
   }
 }

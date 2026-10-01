@@ -11,6 +11,15 @@ Six varied sources, extracted with the strongest model before the full run.
 | S-010 | Standard | AI Coding Assistants (joint ANSSI-BSI recommendations) | 46,520 | Government guidance specific to coding assistants; many recommendations; manual PDF copy. |
 | R-017 | Long survey | A Systematic Survey of Security Threats and Defenses in LLM-based agents | 189,198 (~47k tokens) | Long survey; tests whole-file reading, threat-model extraction, and record size. |
 
+## Status
+
+- v1 (first pilot, schema 0.1) is kept in `sources/extractions/pilot_v1/` for
+  comparison and reviewed in `pilot_review.md`. It does not validate against the
+  revised schema (assets/input channels lack `tag`; R-017's framework name is too
+  long). The driver and validator ignore that folder.
+- v2: re-extract the same six IDs with the revised schema, vocabulary and prompt
+  (vocabulary 0.2). P-043 stays included.
+
 ## Run (inside the VM, from the repo checkout)
 
 ```sh
@@ -18,5 +27,7 @@ cd ~/projects/CodeVM/isolation_research
 scripts/extract_driver.py --model claude-opus-5-5 --ids R-007 P-002 P-043 P-026 S-010 R-017
 ```
 
-Then review the records in `sources/extractions/` (and `sources/extractions/failed/`,
+Then compare with `pilot_v1/` (`diff` per ID, or
+`.venv/bin/python scripts/validate_extractions.py --dir sources/extractions/pilot_v1`)
+and review the records in `sources/extractions/` (and `sources/extractions/failed/`,
 `sources/manual_check.md`) as described in `README.md`.

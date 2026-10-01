@@ -1,18 +1,19 @@
 # Seed controlled vocabulary for Step 3 extraction records.
 # Values outside these lists are written as "other:<short-text>".
-# Revise after the pilot (see extraction/README.md).
-version: 0.1
+# Fixed-value lists (qualifiers, claim_kinds, boundary_strengths) do not allow other:.
+version: 0.2  # post-pilot revision (see pilot_review.md)
 
 practice_tags:
   # RQ2 - isolation boundary
-  harness-permissions: Native harness permission/approval system (allow/deny rules, approval prompts, modes).
+  harness-permissions: Native harness permission/approval system (allow/deny rules, approval prompts, modes), incl. admin-enforced/managed settings.
   auto-approval-classifier: Model-based auto-approval of tool calls (e.g. "auto mode").
   os-sandbox: OS-level process sandbox on a shared kernel (Seatbelt, bubblewrap, Landlock, seccomp).
-  container: Container isolation (Docker, Podman, devcontainer) on a shared kernel.
+  container: Container isolation (Docker, Podman, devcontainer) on a shared kernel as the agent's boundary (not merely the place a nested sandbox runs; that is os-sandbox).
   gvisor-userspace-kernel: User-space kernel or syscall interposition (gVisor and similar).
   microvm-vm: Hardware-virtualized boundary (Firecracker, Lima/QEMU VM, microVM).
   remote-ephemeral-env: Agent runs on a remote or disposable machine/cloud sandbox.
   harness-outside-sandbox: Harness/credentials kept outside the sandbox, only tool execution inside.
+  sandbox-unspecified: Source recommends sandboxing/isolating execution without naming a technology.
   filesystem-scoping: Restrict readable/writable paths (workdir-only, read-only mounts, no host mounts).
   # RQ3 - secrets
   no-secrets-in-env: Keep credentials out of the agent's environment and filesystem.
@@ -21,14 +22,16 @@ practice_tags:
   secret-scanning: Detect/redact secrets in inputs, outputs, or commits.
   # RQ4 - egress
   egress-deny-all: Block all outbound network access.
-  egress-domain-allowlist: Allow egress only to listed domains/hosts.
-  egress-proxy-inspection: Route egress via a proxy that inspects or filters requests.
+  egress-domain-allowlist: Allow egress only to listed domains/hosts (incl. hostname-filtering proxies, restricting image/link rendering to trusted hosts).
+  egress-proxy-inspection: Route egress via a proxy that inspects request CONTENT (TLS termination, DLP). Plain hostname filtering is egress-domain-allowlist.
+  egress-restriction-unspecified: Source recommends restricting outbound network without specifying deny-all vs allowlist.
   # RQ5 - prompt injection
   pi-classifier-detection: Classifier or detector for prompt injection in inputs.
   pi-prompt-hardening: Prompt-level defenses (spotlighting, delimiters, instructions, rules files).
   pi-architectural-isolation: Design patterns separating trusted control from untrusted data (dual LLM, CaMeL, plan-then-execute).
   information-flow-control: Taint/label tracking and policy on data flows.
-  capability-policy-enforcement: Programmatic privilege/capability policies on tool calls.
+  capability-policy-enforcement: Programmatic privilege/capability policies on tool calls (incl. tool-call proxies that enforce them).
+  model-level-robustness: Model training/fine-tuning against prompt injection or insecure code (e.g. SecAlign).
   lethal-trifecta-avoidance: Avoid combining private data, untrusted content, and exfiltration ability (rule of two).
   human-in-the-loop: Human review/approval of actions, diffs, or plans.
   # RQ6 - secondary risks
@@ -36,13 +39,17 @@ practice_tags:
   supply-chain-controls: Pin/verify dependencies, packages, MCP servers, skills, extensions.
   mcp-tool-vetting: Review, pin, or restrict MCP servers and tools.
   destructive-action-guards: Prevent or make reversible destructive actions (snapshots, backups, deny rm/force-push).
-  code-review-integrity: Review agent-written code/commits before merge or host execution.
+  code-review-integrity: Review agent-written code/commits before merge or host execution, by people or automated testing/scanning.
   resource-limits: CPU/memory/time/cost limits.
   audit-logging-monitoring: Log, monitor, or alert on agent actions.
   multi-agent-trust-boundaries: Isolation and trust rules between cooperating agents.
   data-governance: Controls on what data the agent and vendor may see or retain.
   red-teaming-evaluation: Adversarial testing/benchmarking of the agent setup.
+  memory-integrity-controls: Provenance/access control on persistent agent memory.
   patching-updates: Keep harness/sandbox updated; vendor fixes.
+  vendor-disclosure-transparency: Vendors issuing CVEs/advisories; users obtaining vendor security commitments.
+  incident-response: Detect and respond after compromise (rotate credentials, review logs, audit what ran).
+  org-governance-training: Organizational policy, usage guidelines, risk analysis, user training/awareness.
 
 threat_tags:
   prompt-injection-indirect: Malicious instructions in content the agent reads (repos, issues, web, docs, tool output).
@@ -61,6 +68,8 @@ threat_tags:
   privilege-escalation: Gaining more rights than granted (in-sandbox or via tools).
   multi-agent-compromise: One agent compromising another.
   misaligned-agent-behavior: Agent itself acting harmfully without external attacker.
+  lateral-movement: Reaching internal network/services from the agent environment.
+  memory-poisoning: Injected content persisted in agent memory and acting in later sessions.
 
 evidence_types:
   empirical-evaluation: Measured results (benchmark, experiment, red-team statistics).
@@ -81,3 +90,55 @@ author_roles:
   industry-research: Corporate research group.
   standards-body: Government agency or standards org.
   community: Forum/discussion participants.
+
+# threat_model.assets[].tag
+asset_tags:
+  source-code: Repository contents and the integrity of produced code.
+  secrets-credentials: Tokens, SSH keys, cloud credentials, passwords (other than the model API key).
+  model-api-key: The LLM provider API key / harness login token.
+  host-system: The developer machine, its files, and processes outside the project.
+  personal-data: Private user or customer data, PII, confidential documents.
+  cloud-infrastructure: Cloud accounts, production systems, deployed services.
+  internal-network: Internal hosts and services reachable from the agent's network.
+  ci-cd-pipeline: CI/CD systems, build artifacts, release and package publishing.
+
+# threat_model.input_channels[].tag
+channel_tags:
+  repo-content: Files in the repository (code, README, comments, docs in the repo).
+  repo-config: Repo-supplied agent/tool config (rules files, MCP config, hooks, .envrc, IDE settings).
+  issues-prs: Issue, pull-request, and review text from a forge.
+  web-content: Web pages and search results fetched by the agent.
+  dependencies: Packages, libraries, and their docs pulled into the project.
+  tool-output: Output of tools, MCP servers, or commands returned to the model.
+  user-prompt: The user's or operator's own instructions.
+  messages-email: Email, chat, or ticket content the agent reads.
+  agent-memory: Persisted agent memory or prior-session state.
+  other-agents: Messages from other agents.
+
+# contested_positions[].topic (Step 5 contested points; other: allowed)
+contested_topics:
+  shared-kernel-vs-vm: Is a shared-kernel boundary (container, OS sandbox) enough, or is a VM needed?
+  egress-allowlist-sufficiency: Is per-domain egress allowlisting enough?
+  pi-classifier-value: Are prompt-injection classifiers worth deploying?
+  harness-permissions-as-boundary: Is the harness's native permission system a security boundary or only a convenience?
+  host-delayed-execution: Are agent-written files executed later on the host (git hooks, .envrc, IDE tasks) a risk, and how to handle them?
+
+# recommendations[].qualifier (optional; fixed list)
+qualifiers:
+  weakening-option: The entry concerns a weakening option/escape hatch of the practice (e.g. "do not enable allowUnsandboxedCommands"); the source otherwise endorses the practice.
+  default-config: The entry concerns the practice's default configuration (e.g. "default read access includes ~/.ssh").
+  as-sole-control: The verdict applies to the practice used alone (e.g. "classifiers are insufficient on their own"), not as one layer.
+  future-work: Proposed or anticipated, not yet available or evaluated.
+
+# recommendations[].claim_kind (optional; fixed list)
+claim_kinds:
+  recommendation: Advice or design to adopt or avoid something.
+  limitation: A stated limit, bypass, or gap of the practice.
+  measured-result: A measured outcome (benchmark, experiment) about the practice.
+
+# recommendations[].boundary_strength (optional; for RQ2 entries; fixed list)
+boundary_strengths:
+  security-boundary: Source treats it as a security boundary against a capable attacker.
+  defense-in-depth: Source treats it as one layer, not sufficient alone.
+  convenience: Source treats it as a usability/safety-net feature, not security.
+  unstated: Source does not say.

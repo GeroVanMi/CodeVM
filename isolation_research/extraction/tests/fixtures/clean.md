@@ -7,3 +7,7 @@ The ﬁrewall must deny all egress by default; per-domain allow-
 lists can be bypassed via DNS tunneling.
 
 Attackers can hide instructions in README files and issue comments.
+
+Never mount the Docker socket into the sandbox; it exposes the host. Treat AI-
+generated git hooks as untrusted before they run on the host, since your
+cloud credentials are at stake.

@@ -2,6 +2,7 @@ id: P-999
 title: Fake Source
 author_org: Test Org
 date: "2026-01-01"
+date_normalized: "2026-01"
 stream: Practitioner Sources
 sub_stream: Engineering Blogs
 author_role: independent-practitioner
@@ -13,6 +14,8 @@ inclusion_reason: Gives concrete isolation recommendations for coding agents.
 recommendations:
   - practice: microvm-vm
     stance: recommends
+    claim_kind: recommendation
+    boundary_strength: security-boundary
     summary: Run the agent in a VM rather than relying on a shared kernel.
     threats: [sandbox-escape, rce-via-agent]
     rqs: [RQ2]
@@ -31,15 +34,40 @@ recommendations:
     bypasses_limits: [DNS tunneling bypasses per-domain allowlists.]
     quote: "The firewall must deny all egress by default; per-domain allowlists can be bypassed"
     location: paragraph 2
+  - practice: container
+    stance: recommends
+    qualifier: weakening-option
+    summary: Do not mount the Docker socket.
+    threats: []
+    rqs: [RQ2]
+    evidence_type: expert-opinion
+    tradeoffs: []
+    bypasses_limits: []
+    quote: "Never mount the Docker socket into the sandbox; it exposes the host."
+    location: paragraph 4
 threat_model:
-  framework: null
-  assets: []
+  framework:
+    value: shared-kernel argument
+    details: Kernel bugs make containers insufficient.
+    quote: a shared kernel "is not a security boundary"
+  assets:
+    - value: cloud credentials
+      tag: secrets-credentials
+      quote: your cloud credentials are at stake
   input_channels:
     - value: README files and issue comments
+      tag: repo-content
       quote: "hide instructions in README files ... issue comments"
       location: paragraph 3
   failure_modes:
     - value: Egress allowlist bypass
       threat: egress-bypass
       quote: "can be bypassed via DNS tunneling"
+contested_positions:
+  - topic: shared-kernel-vs-vm
+    position: A shared kernel is not a boundary for untrusted code; use a VM.
+    quote: "We recommend running the agent inside a virtual machine"
+  - topic: host-delayed-execution
+    position: Treat agent-written hooks as untrusted.
+    quote: Treat AI-generated git hooks as untrusted
 notes: ""

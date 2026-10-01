@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Step 3 driver: run headless `claude -p` once per source, inside CodeVM.
 
-For each ID (from sources/sources.csv) without sources/extractions/<ID>.yaml:
+For each ID (from sources/sources.csv) without sources/extractions/<ID>.yaml
+(top level only; subfolders such as pilot_v1/ and failed/ are not checked):
   1. Skip and flag on manual_check.md if clean.md is over --max-tokens (chars/4).
   2. Copy clean.md into a fresh, empty temp workdir and run `claude -p` there
      with only the Read and Write tools (restricted mode, no Bash, no web, no
@@ -16,7 +17,7 @@ isolation_research/.venv/bin/python, else python3).
 
 Examples:
   scripts/extract_driver.py --model claude-opus-5-5 --ids P-002 R-007
-  scripts/extract_driver.py --model claude-sonnet-5 --dry-run
+  scripts/extract_driver.py --model claude-opus-5-5 --dry-run
 """
 import argparse, csv, datetime as dt, os, shutil, subprocess, sys, tempfile
 from pathlib import Path
@@ -161,7 +162,7 @@ def main():
     for row in rows:
         rid = row["id"]
         clean = SOURCES / "corpus" / rid / "clean.md"
-        if (EXTRACTIONS / f"{rid}.yaml").exists():
+        if (EXTRACTIONS / f"{rid}.yaml").exists():  # top level only; pilot_v1/ is ignored
             skipped += 1
             continue
         print(f"{rid}: {row['title'][:70]}")
