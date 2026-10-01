@@ -7,7 +7,7 @@ first session were found.
 
 | Stream        | Sources kept | Stopping rule reached | Status                                           |
 | ------------- | ------------ | --------------------- | ------------------------------------------------ |
-| Practitioners | 58           | No                    | Searched; incidents still add new bypass classes (P-058 added in session 3) |
+| Practitioners | 57           | No                    | Searched; incidents still add new bypass classes (P-058 added in session 3; P-045 removed in Step 2) |
 | Researchers   | 34           | No                    | Stopped at call budget twice; 2026 papers still add new mechanisms |
 | Standards     | 11           | No                    | S-002 and S-004 read in session 3; S-008 (NCSC) added new recommendations |
 

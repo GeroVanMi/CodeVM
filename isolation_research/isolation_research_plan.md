@@ -57,7 +57,7 @@ Search each stream separately and log the queries, date, and number of hits so t
 
 Download every source once, so extraction agents never fetch anything and each site is hit only once.
 
-- **Source list:** generate `sources/sources.csv` once from `sources/sources.md`, keyed by the existing IDs (P-001, R-001, S-001, ...). From then on, the CSV is the source of truth; new sources are added there.
+- **Source list:** `sources/sources.csv` was generated once from the Step 1 list (`sources.md`, since removed; see git history), keyed by the existing IDs (P-001, R-001, S-001, ...). From then on, the CSV is the source of truth; new sources are added there.
 - **Fetch script:** a Python script that runs on the host. It uses `trafilatura` for HTML and `pymupdf` for PDFs. It rate-limits requests, respects `robots.txt`, and skips sources that are already downloaded.
 - **Layout:** for each source, `sources/corpus/<ID>/raw.*` (the original file) and `sources/corpus/<ID>/clean.md` (normalized text). The `corpus/` directory is gitignored.
 - **Manifest:** `sources/manifest.csv` is committed. It records ID, URL, fetch date, HTTP status, content hash, extraction method, and clean-text length. On re-runs, compare hashes to see which sources changed.

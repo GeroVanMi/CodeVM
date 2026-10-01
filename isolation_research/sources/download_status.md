@@ -13,7 +13,7 @@ All 102 sources in `sources.csv` (P-001..P-058 without P-045, R-001..R-034, S-00
 ## Notes
 
 - `sources.csv` was generated once by `../scripts/md_to_csv.py`; it refuses to overwrite without `--force`. Edit the CSV directly from now on.
-- S-004: the URL cell in `sources.md` held three URLs. The CSV keeps the CISA URL; the Canadian HTML and Australian PDF copies are in `license_note`. The automatic CISA fetch yielded only 607 chars; the user placed a saved copy at `corpus/S-004/raw.html` (the `raw_files/` folder beside it is ignored), now about 62,000 chars.
+- S-004: the URL cell in the former `sources.md` held three URLs. The CSV keeps the CISA URL; the Canadian HTML and Australian PDF copies are in `license_note`. The automatic CISA fetch yielded only 607 chars; the user placed a saved copy at `corpus/S-004/raw.html` (the `raw_files/` folder beside it is ignored), now about 62,000 chars.
 - Extraction fallback: if trafilatura yields under 2,000 chars, the script takes the longest string from the page's embedded JSON (`__NEXT_DATA__`, JSON-LD, other `application/json` scripts) when it is over 3 times longer, and records `embedded-json` as `extraction_method`. Only P-038 (stripe.dev, client-rendered Next.js) uses it.
 - For manually placed files, `fetch_date`, `http_status` and `final_url` stay as recorded by the original automatic fetch.
 - Thin but full-text pages (about 1,700 to 1,900 chars): P-016, P-018, P-046, P-049, S-010.

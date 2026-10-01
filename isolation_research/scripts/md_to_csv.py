@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""One-time conversion of sources/sources.md tables into sources/sources.csv."""
+"""One-time conversion of sources/sources.md tables into sources/sources.csv.
+
+sources.md was removed after the conversion; restore it from git history to re-run.
+"""
 import csv, re, sys
 from pathlib import Path
 
@@ -27,7 +30,7 @@ def main():
     if out.exists() and "--force" not in sys.argv:
         sys.exit(f"{out} exists; it is the source of truth now. Use --force to overwrite.")
     with out.open("w", newline="") as f:
-        w = csv.DictWriter(f, COLS); w.writeheader(); w.writerows(rows)
+        w = csv.DictWriter(f, COLS, lineterminator="\n"); w.writeheader(); w.writerows(rows)
     print(len(rows), "rows;", {p: sum(i.startswith(p) for i in ids) for p in "PRS"})
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 # Excluded Candidates
 
-Notable candidates seen during Step 1 and not kept in [sources.md](sources.md).
+Notable candidates seen during Step 1 and not kept in [sources.csv](sources.csv). P-045 was removed later, in Step 2.
 
 ## Reposts and Secondary Coverage
 

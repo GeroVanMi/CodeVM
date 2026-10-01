@@ -303,7 +303,7 @@ def main():
 
     order = [s["id"] for s in sources]
     with (BASE / "manifest.csv").open("w", newline="") as fh:
-        w = csv.DictWriter(fh, MANIFEST_COLS, extrasaction="ignore")
+        w = csv.DictWriter(fh, MANIFEST_COLS, extrasaction="ignore", lineterminator="\n")
         w.writeheader()
         for i in order:
             if i in rows:

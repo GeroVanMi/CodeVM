@@ -8,11 +8,13 @@ All queries ran on 2026-09-30.
 - WebSearch returns about ten results per query. "Hits" is the number of results
   returned; "Kept" is the number of candidates kept at query time. Later
   deduplication and exclusion reduced the 82 kept candidates to the 57 sources
-  in [sources.md](sources.md); see [excluded.md](excluded.md).
+  in the source list (now [sources.csv](sources.csv)); see [excluded.md](excluded.md).
+  P-058 was added in a later session and P-045 was removed in Step 2, so
+  the practitioner stream now has 57 sources (102 in total).
 - Sources found by following a link from a kept source are logged as "(direct
   fetch)" rows.
 - Each kept source was opened with WebFetch to confirm title, author, and date
-  unless [sources.md](sources.md) says otherwise.
+  unless the `verification` column of [sources.csv](sources.csv) says otherwise.
 - The first session was stopped on request after the practitioner stream. A
   second session on the same date searched the researcher and standards
   streams and stopped at its 60-call budget.
