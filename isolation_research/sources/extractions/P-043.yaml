@@ -1,0 +1,75 @@
+id: P-043
+extracted_by: claude-opus-5-5
+extracted_at: "2026-10-01T22:12:40Z"
+title: "The agent harness belongs outside the sandbox"
+author_org: "Andrea Luzzardi, Mendral"
+date: "2026-04-10"
+date_normalized: "2026-04-10"
+stream: Practitioner Sources
+sub_stream: Engineering Blogs
+author_role: vendor
+incentives: "Mendral builds and runs a multi-user agent product with its own harness; the post justifies its architecture choice and names its infrastructure suppliers (Blaxel sandboxes, Inngest durable execution)."
+harness: [Claude Code]
+included: true
+inclusion_reason: "Makes a concrete architectural security recommendation for coding/tool-using agents: run the harness (holding LLM API keys, user tokens, database access) outside the sandbox so that only tool execution happens inside it and credentials cannot leak from it. The security content is short; most of the post covers operational concerns."
+recommendations:
+  - practice: harness-outside-sandbox
+    stance: recommends
+    claim_kind: recommendation
+    boundary_strength: security-boundary
+    summary: "Run the agent loop on the backend and execute only tool calls in a sandbox via an API, so the credentials the harness holds are never inside the sandbox; the post claims this removes the need for a permission model and for containing credential leaks."
+    threats: [secret-exfiltration, sandbox-escape]
+    rqs: [RQ2, RQ3]
+    evidence_type: design-rationale
+    tradeoffs:
+      - "Off-the-shelf local harnesses (e.g. stock Claude Code) stop working because they assume a local filesystem."
+      - "Durable execution becomes the builder's problem; sessions run for hours and must survive deploys."
+      - "Skills/memories must be virtualized; new harness features lag behind the virtualization layer."
+    bypasses_limits: []
+    quote: "Your credentials stay out of the sandbox. The loop holds the LLM API keys, the user tokens, the database access."
+    location: "Section: Tradeoffs"
+  - practice: no-secrets-in-env
+    stance: recommends
+    claim_kind: recommendation
+    summary: "The sandbox contains only the environment the agent needs for its work; LLM API keys, user tokens, and database access stay outside it."
+    threats: [secret-exfiltration]
+    rqs: [RQ3]
+    evidence_type: design-rationale
+    tradeoffs: []
+    bypasses_limits: []
+    quote: "The sandbox holds only the environment the agent needs to do its work. There's nothing in there for the agent to escape to, so there's no permission model to enforce and no credential leak to contain."
+    location: "Section: Tradeoffs"
+threat_model:
+  framework: null
+  assets:
+    - value: LLM API keys held by the harness
+      tag: model-api-key
+      quote: "The loop holds the LLM API keys, the user tokens, the database access."
+      location: "Section: Tradeoffs"
+    - value: User tokens and database access
+      tag: secrets-credentials
+      quote: "The loop holds the LLM API keys, the user tokens, the database access."
+      location: "Section: Tradeoffs"
+  input_channels: []
+  failure_modes:
+    - value: Credential leak from a sandbox that contains the harness and its credentials
+      threat: secret-exfiltration
+      quote: "There's nothing in there for the agent to escape to, so there's no permission model to enforce and no credential leak to contain."
+      location: "Section: Tradeoffs"
+contested_positions:
+  - topic: harness-permissions-as-boundary
+    position: "When the harness and credentials are outside the sandbox, no harness permission model is needed to enforce security; the boundary is architectural, not the permission system."
+    quote: "There's nothing in there for the agent to escape to, so there's no permission model to enforce and no credential leak to contain."
+    location: "Section: Tradeoffs"
+notes: >
+  Metadata matches the text as far as can be checked (the text has no byline or date; the author, org, and date come from the CSV).
+  Most of the post covers operational design choices that were left out of recommendations as non-security:
+  durable execution with Inngest, sandbox suspend/resume with Blaxel (25ms resume), disposable "cattle" sandboxes,
+  and keeping skills and memories in a database (Postgres) behind a virtualized read/write/edit filesystem interface.
+  Org-shared memory is a database write scoped to the organization. Memory-poisoning risk across users is not discussed.
+  The post says "bash is a leak": bash bypasses the virtualization layer. Its two guards (a system-prompt instruction
+  and tree-sitter parsing of bash commands) are described as best-effort ("Neither is airtight"). They serve correctness,
+  not security, so they are not recorded as security controls.
+  The post does not name a sandbox isolation technology, does not cover egress control or prompt injection, and does not
+  discuss the threat of a compromised sandbox acting through tool results returned to the harness.
+  No prompt-injection payload was observed in the source.

@@ -1,0 +1,493 @@
+id: P-002
+extracted_by: claude-opus-5-5
+extracted_at: "2026-10-01T22:11:18Z"
+title: "Configure the sandboxed Bash tool"
+author_org: "Anthropic"
+date: "living, accessed 2026-09-30"
+stream: Practitioner Sources
+sub_stream: Vendor Documentation
+author_role: vendor
+incentives: "Anthropic builds Claude Code and its built-in sandbox (sandbox-runtime); the documentation promotes its own sandbox, credential masking, and managed-settings features (managed settings tie into claude.ai server-managed settings)."
+harness:
+  - Claude Code
+included: true
+inclusion_reason: "Vendor documentation with concrete isolation, filesystem, credential-protection, and egress recommendations for a coding agent, plus explicit security limitations and weakening options."
+recommendations:
+  - practice: os-sandbox
+    stance: recommends
+    claim_kind: recommendation
+    boundary_strength: defense-in-depth
+    summary: "Run Bash/PowerShell/Monitor commands and their child processes in an OS-level sandbox (Seatbelt on macOS, bubblewrap on Linux/WSL2) that restricts filesystem and network access."
+    threats:
+      - rce-via-agent
+      - destructive-action
+    rqs:
+      - RQ2
+    evidence_type: vendor-claim
+    tradeoffs:
+      - "Some tools are incompatible (watchman, docker, Go CLIs failing TLS verification under Seatbelt, clipboard tools) and need configuration or excludedCommands."
+      - "Minimal performance overhead; some filesystem operations may be slightly slower."
+      - "Native Windows and WSL1 are not supported."
+    bypasses_limits:
+      - "Applies only to Bash, PowerShell, and Monitor commands, not other tools."
+    quote: "provides OS-level enforcement that restricts what shell commands can access at the filesystem and network level."
+    location: "Section: How sandboxing relates to permissions and permission modes / Permission rules"
+  - practice: os-sandbox
+    stance: recommends
+    claim_kind: limitation
+    boundary_strength: defense-in-depth
+    summary: "The sandbox reduces risk but is not a complete isolation boundary; users should review its limitations before treating it as a hard security control."
+    threats:
+      - sandbox-escape
+    rqs:
+      - RQ2
+      - RQ7
+    evidence_type: vendor-claim
+    tradeoffs: []
+    bypasses_limits:
+      - "Network filtering does not inspect TLS contents by default."
+      - "Allowed Unix sockets, broad write permissions, the weaker nested sandbox, and Apple Events can each undermine the sandbox."
+    quote: "Sandboxing reduces risk but is not a complete isolation boundary. Review the limitations below before relying on it as a hard security control."
+    location: "Section: Limitations"
+  - practice: os-sandbox
+    stance: recommends
+    claim_kind: limitation
+    boundary_strength: defense-in-depth
+    summary: "Sandbox scope is limited to Bash subprocesses: built-in Read/Edit/Write tools use the permission system only, computer use runs on the real desktop, and subagents share the parent's sandbox configuration."
+    threats: []
+    rqs:
+      - RQ2
+      - RQ6
+    evidence_type: vendor-claim
+    tradeoffs: []
+    bypasses_limits:
+      - "Built-in file tools bypass the sandbox and rely on permission rules."
+      - "Computer use runs on the actual desktop, gated only by per-app permission prompts."
+      - "Commands the user types at the ! shell-mode prompt run outside the sandbox except in background sessions or with CLAUDE_CODE_SUBPROCESS_ENV_SCRUB on Linux."
+    quote: "Read, Edit, and Write use the permission system directly rather than running through the sandbox."
+    location: "Section: Limitations / Scope"
+  - practice: os-sandbox
+    stance: recommends
+    qualifier: weakening-option
+    claim_kind: recommendation
+    boundary_strength: defense-in-depth
+    summary: "Disable the dangerouslyDisableSandbox retry escape hatch (allowUnsandboxedCommands false, 'strict sandbox mode') so the model cannot retry blocked commands outside the sandbox."
+    threats:
+      - permission-bypass
+      - rce-via-agent
+    rqs:
+      - RQ2
+    evidence_type: vendor-claim
+    tradeoffs:
+      - "Commands that fail under the sandbox must be run by the user or added to excludedCommands."
+    bypasses_limits:
+      - "By default Claude may retry a blocked command unsandboxed via the regular permission flow; in auto mode the classifier evaluates it."
+      - "Commands listed in excludedCommands still run unsandboxed."
+    quote: |-
+      Claude Code ignores the`dangerouslyDisableSandbox` escape hatch, so when a command fails under the sandbox, Claude can’t retry it unsandboxed
+    location: "Section: Configure the sandbox for your organization / Enforce sandboxing with managed settings"
+  - practice: os-sandbox
+    stance: recommends
+    qualifier: default-config
+    claim_kind: recommendation
+    boundary_strength: defense-in-depth
+    summary: "Enforce the sandbox fleet-wide through managed settings with failIfUnavailable so a missing dependency blocks startup instead of silently falling back to unsandboxed execution."
+    threats: []
+    rqs:
+      - RQ2
+    evidence_type: vendor-claim
+    tradeoffs:
+      - "Windows hosts must be excluded or use WSL2/containers."
+    bypasses_limits:
+      - "Without failIfUnavailable, a missing dependency produces a warning and unsandboxed fallback."
+      - "Developers can still run commands themselves at the ! shell-mode prompt outside the sandbox."
+    quote: "a missing dependency such as bubblewrap on Linux blocks Claude Code from starting rather than showing a warning and falling back to unsandboxed execution"
+    location: "Section: Enforce sandboxing with managed settings"
+  - practice: os-sandbox
+    stance: recommends
+    qualifier: weakening-option
+    claim_kind: limitation
+    boundary_strength: defense-in-depth
+    summary: "Array keys such as excludedCommands merge across scopes and have no managed-only lockdown, so developers can widen the policy; keep the managed list narrow and use allowManagedReadPathsOnly / allowManagedDomainsOnly where available."
+    threats:
+      - permission-bypass
+    rqs:
+      - RQ2
+      - RQ6
+    evidence_type: vendor-claim
+    tradeoffs: []
+    bypasses_limits:
+      - "Developers can always append excludedCommands entries that run outside the sandbox."
+    quote: "has no equivalent managed-only lockdown, so a developer can always append entries that run additional commands outside the sandbox. Keep the managed list narrow."
+    location: "Section: Keep developers from widening the policy"
+  - practice: os-sandbox
+    stance: recommends
+    qualifier: weakening-option
+    claim_kind: recommendation
+    boundary_strength: defense-in-depth
+    summary: "Carefully restrict allowed Unix sockets; allowing e.g. the Docker socket grants host access and bypasses the sandbox."
+    threats:
+      - sandbox-escape
+      - privilege-escalation
+    rqs:
+      - RQ2
+    evidence_type: vendor-claim
+    tradeoffs: []
+    bypasses_limits:
+      - "Unix domain socket blocking requires the optional seccomp filter on Linux; on WSL2, launching Windows binaries goes through a Unix socket, so without the filter sandboxed commands can launch them."
+    quote: |-
+      For example, allowing access to`/var/run/docker.sock` effectively grants access to the host system through the Docker socket. Consider carefully any Unix sockets that you allow through the sandbox.
+    location: "Section: Security limitations"
+  - practice: os-sandbox
+    stance: recommends
+    qualifier: weakening-option
+    claim_kind: recommendation
+    boundary_strength: defense-in-depth
+    summary: "Use enableWeakerNestedSandbox (for running inside unprivileged containers) only when an outer container already provides the needed isolation, since it considerably weakens security."
+    threats:
+      - sandbox-escape
+    rqs:
+      - RQ2
+    evidence_type: vendor-claim
+    tradeoffs:
+      - "Exposes process information to sandboxed commands that a fresh /proc mount would hide."
+    bypasses_limits: []
+    quote: "This option considerably weakens security and should only be used when additional isolation is otherwise enforced."
+    location: "Section: Security limitations (Linux sandbox strength); Troubleshooting"
+  - practice: os-sandbox
+    stance: recommends
+    qualifier: weakening-option
+    claim_kind: recommendation
+    boundary_strength: defense-in-depth
+    summary: "Enabling allowAppleEvents on macOS removes code-execution isolation; it is honored only from user, managed, or CLI settings, not project settings."
+    threats:
+      - sandbox-escape
+      - rce-via-agent
+    rqs:
+      - RQ2
+    evidence_type: vendor-claim
+    tradeoffs:
+      - "Blocking Apple Events breaks open, osascript, and browser-based auth flows."
+    bypasses_limits:
+      - "With Apple Events allowed, sandboxed commands can launch other applications unsandboxed with no user prompt (subject to TCC)."
+    quote: |-
+      The`allowAppleEvents` setting lifts this restriction so tools such as`open` and`osascript` work, but it removes code-execution isolation: sandboxed commands can launch other applications unsandboxed with no user prompt
+    location: "Section: Security limitations (Apple Events on macOS)"
+  - practice: filesystem-scoping
+    stance: recommends
+    claim_kind: recommendation
+    boundary_strength: defense-in-depth
+    summary: "By default sandboxed commands may write only to the working directory, added directories, and a per-user temp directory; writes to shell config files and system binaries are blocked."
+    threats:
+      - destructive-action
+      - host-delayed-execution
+    rqs:
+      - RQ2
+      - RQ6
+    evidence_type: vendor-claim
+    tradeoffs: []
+    bypasses_limits: []
+    quote: |-
+      cannot modify files outside the working directory, added directories, and the per-user temp directory without explicit permission, including shell configuration files such as`~/.bashrc` and system binaries in`/bin/`
+    location: "Section: How sandboxing works / Filesystem isolation"
+  - practice: filesystem-scoping
+    stance: recommends
+    qualifier: default-config
+    claim_kind: limitation
+    boundary_strength: defense-in-depth
+    summary: "Default read access covers the whole computer, including credential files like ~/.aws/credentials and ~/.ssh/; block them via sandbox.credentials, denyRead, or permissions.blockReadsOutsideWorkingDirectories."
+    threats:
+      - secret-exfiltration
+      - data-exfiltration
+    rqs:
+      - RQ2
+      - RQ3
+    evidence_type: vendor-claim
+    tradeoffs: []
+    bypasses_limits:
+      - "Default read policy exposes credential files unless explicitly denied."
+    quote: |-
+      read access to the entire computer, except certain denied directories. Note that this default still allows reading credential files such as`~/.aws/credentials` and`~/.ssh/` .
+    location: "Section: Filesystem isolation"
+  - practice: filesystem-scoping
+    stance: recommends
+    claim_kind: recommendation
+    boundary_strength: defense-in-depth
+    summary: "Even inside writable directories, the sandbox denies writes to Claude Code config/code paths (.claude settings, skills, hooks, .mcp.json), shell startup files, .gitconfig, .vscode/.idea, .git hooks and config, bare-repo files, and ~/.claude including the credential store; allowWrite rules cannot lift this."
+    threats:
+      - host-delayed-execution
+      - permission-bypass
+      - sandbox-escape
+    rqs:
+      - RQ2
+      - RQ6
+    evidence_type: design-rationale
+    tradeoffs:
+      - "git merge/checkout can fail with 'unable to unlink old' when replacing protected files."
+    bypasses_limits:
+      - "Protection is turned off entirely when filesystem.disabled is set."
+    quote: "Inside the directories that sandboxed commands can write to, the sandbox still denies writes to the files Claude Code loads configuration and code from. A command that could edit those files could grant itself permissions, or add a hook or MCP server that Claude Code runs outside the sandbox."
+    location: "Section: Protected paths"
+  - practice: filesystem-scoping
+    stance: recommends
+    qualifier: weakening-option
+    claim_kind: recommendation
+    boundary_strength: defense-in-depth
+    summary: "Avoid overly broad write permissions (directories on $PATH, system config, shell rc files), which enable code execution in other security contexts."
+    threats:
+      - privilege-escalation
+      - host-delayed-execution
+    rqs:
+      - RQ2
+      - RQ6
+    evidence_type: vendor-claim
+    tradeoffs: []
+    bypasses_limits: []
+    quote: |-
+      Allowing writes to directories containing executables in`$PATH` , system configuration directories, or user shell configuration files such as`.bashrc` or`.zshrc` can lead to code execution in different security contexts when other users or system processes access these files.
+    location: "Section: Security limitations (Filesystem permission escalation)"
+  - practice: filesystem-scoping
+    stance: recommends
+    qualifier: weakening-option
+    claim_kind: limitation
+    boundary_strength: defense-in-depth
+    summary: "sandbox.filesystem.disabled removes filesystem isolation (unrestricted host read/write) while keeping network isolation; it cannot be set from project settings and is ignored under CLAUDE_CODE_SUBPROCESS_ENV_SCRUB."
+    threats:
+      - destructive-action
+      - host-delayed-execution
+    rqs:
+      - RQ2
+    evidence_type: vendor-claim
+    tradeoffs: []
+    bypasses_limits:
+      - "Disabling the filesystem layer also disables credential file deny protection and protected paths."
+    quote: "With the filesystem layer off, sandboxed commands get unrestricted read and write access to the host filesystem, while their network egress stays confined to your allowed domains."
+    location: "Section: Disable filesystem isolation"
+  - practice: untrusted-repo-config-handling
+    stance: recommends
+    claim_kind: recommendation
+    summary: "Repository settings files cannot weaken the sandbox: project settings cannot disable filesystem isolation, and mask entries, tlsTerminate, allowPlaintextInject, strictAllowlist, and allowAppleEvents are ignored from project settings."
+    threats:
+      - permission-bypass
+      - secret-exfiltration
+    rqs:
+      - RQ6
+    evidence_type: design-rationale
+    tradeoffs: []
+    bypasses_limits: []
+    quote: |-
+      Project settings in`.claude/settings.json` and`.claude/settings.local.json` can’t, so a checked-out project can’t switch filesystem isolation off.
+    location: "Section: Which settings can disable it"
+  - practice: no-secrets-in-env
+    stance: recommends
+    claim_kind: recommendation
+    summary: "Use sandbox.credentials deny entries to block reads of credential files and unset secret environment variables for sandboxed commands; deny entries merge across scopes and can only narrow access. CLAUDE_CODE_SUBPROCESS_ENV_SCRUB strips credentials from all subprocesses."
+    threats:
+      - secret-exfiltration
+    rqs:
+      - RQ3
+    evidence_type: vendor-claim
+    tradeoffs:
+      - "Deny removes the variable entirely, breaking tools like gh or npm that need it."
+    bypasses_limits:
+      - "File deny protection is part of the filesystem layer and does not apply when filesystem isolation is disabled; env var protection still applies."
+      - "sandbox.credentials affects sandboxed Bash commands only."
+    quote: |-
+      For entries with `"mode": "deny"`, file paths are denied for reads inside the sandbox, the same restriction that `filesystem.denyRead` applies, and environment variables are unset before each sandboxed command runs.
+    location: "Section: Protect credentials"
+  - practice: no-secrets-in-env
+    stance: recommends
+    qualifier: default-config
+    claim_kind: limitation
+    summary: "By default sandboxed Bash commands inherit the parent environment including credentials; unset or mask them explicitly."
+    threats:
+      - secret-exfiltration
+    rqs:
+      - RQ3
+    evidence_type: vendor-claim
+    tradeoffs: []
+    bypasses_limits:
+      - "Credentials in the parent environment are visible to sandboxed commands unless configured otherwise."
+    quote: "sandboxed Bash commands inherit the parent process environment by default, including any credentials set there."
+    location: "Section: Limitations / Scope (Environment variables)"
+  - practice: credential-proxy
+    stance: recommends
+    claim_kind: recommendation
+    summary: "Mask credentials: sandboxed commands see a per-session sentinel and the sandbox proxy substitutes the real value only on outbound requests to injectHosts that are also in the domain allowlist (requires TLS termination at the proxy; re-signs AWS SigV4)."
+    threats:
+      - secret-exfiltration
+    rqs:
+      - RQ3
+      - RQ4
+    evidence_type: vendor-claim
+    tradeoffs:
+      - "Requires network.tlsTerminate (experimental) so the proxy can see request contents."
+      - "Signature-based auth needs re-signing at the proxy; some AWS request forms cannot be re-signed and fail."
+      - "On macOS masked files are blocked instead of substituted, so tools using them do not work."
+    bypasses_limits:
+      - "Masking authorizes the proxy to send the real credential to the listed hosts; a mask entry without injectHosts substitutes on every allowed domain."
+      - "With onExtractNoMatch at its default 'warn', a non-matching pattern passes the variable or file through unmasked."
+      - "Mask falls back to deny for directories, globs, files over 8 MiB, or non-UTF-8 files."
+    quote: "The command and anything it logs never hold the real credential, but its requests still authenticate."
+    location: "Section: Mask credentials / Mask environment variables"
+  - practice: egress-domain-allowlist
+    stance: recommends
+    claim_kind: recommendation
+    summary: "Route sandboxed network traffic through a proxy outside the sandbox that pre-allows no domains, prompts for new domains, and can be locked to a strict or managed-only allowlist; restrictions apply to all subprocesses."
+    threats:
+      - data-exfiltration
+      - secret-exfiltration
+    rqs:
+      - RQ4
+    evidence_type: vendor-claim
+    tradeoffs:
+      - "Many CLI tools need specific hosts and fail until allowed."
+    bypasses_limits:
+      - "strictAllowlist applies to sandboxed commands only; in-process tools such as WebFetch follow permission rules."
+      - "Developers can approve domains interactively unless strictAllowlist or allowManagedDomainsOnly is set."
+    quote: "Claude Code pre-allows no domains by default."
+    location: "Section: How sandboxing works / Network isolation"
+  - practice: egress-domain-allowlist
+    stance: recommends
+    claim_kind: limitation
+    summary: "The built-in proxy filters only by hostname and does not inspect TLS contents; tlsTerminate adds no content filtering; users are responsible for allowing only trusted domains."
+    threats:
+      - data-exfiltration
+      - egress-bypass
+    rqs:
+      - RQ4
+      - RQ7
+    evidence_type: vendor-claim
+    tradeoffs: []
+    bypasses_limits:
+      - "Encrypted connection contents to allowed domains are not examined."
+    quote: "By default the built-in proxy does not terminate or inspect TLS on outbound traffic, so the contents of encrypted connections are not examined. ... You are responsible for ensuring that only trusted domains are allowed in your policy."
+    location: "Section: Security limitations (Network filtering)"
+  - practice: egress-proxy-inspection
+    stance: recommends
+    claim_kind: recommendation
+    summary: "Organizations needing advanced network security can use a custom proxy to decrypt and inspect HTTPS, apply custom filtering, log all requests, and integrate with existing security infrastructure."
+    threats: []
+    rqs:
+      - RQ4
+    evidence_type: vendor-claim
+    tradeoffs: []
+    bypasses_limits: []
+    quote: "For organizations requiring advanced network security, you can implement a custom proxy to: ... Decrypt and inspect HTTPS traffic"
+    location: "Section: Custom proxy configuration"
+  - practice: auto-approval-classifier
+    stance: recommends
+    claim_kind: recommendation
+    boundary_strength: unstated
+    summary: "In auto mode, Claude names per-command hosts that the classifier reviews with the command; an approved list opens hosts for that single command only and is refused when deniedDomains, strictAllowlist, or allowManagedDomainsOnly lock the allowlist."
+    threats: []
+    rqs:
+      - RQ4
+    evidence_type: vendor-claim
+    tradeoffs: []
+    bypasses_limits: []
+    quote: "The classifier reviews the hosts together with the command. ... An approved list opens those hosts for that one command alone, for as long as it runs."
+    location: "Section: Per-command allowed domains in auto mode"
+  - practice: harness-permissions
+    stance: recommends
+    claim_kind: recommendation
+    boundary_strength: unstated
+    summary: "Permission rules/modes and the sandbox are complementary layers: permissions gate tool calls before they run; sandbox auto-allow replaces prompts for sandboxed Bash because the sandbox boundary contains them, while deny rules and content-scoped ask rules still apply."
+    threats: []
+    rqs:
+      - RQ2
+    evidence_type: vendor-claim
+    tradeoffs:
+      - "Auto-allow lets file-modifying Bash commands run without prompts even in Manual mode."
+    bypasses_limits: []
+    quote: "auto-allow approves Bash commands because the sandbox boundary contains them, while auto mode uses a classifier to review actions."
+    location: "Section: Permission modes"
+  - practice: destructive-action-guards
+    stance: recommends
+    claim_kind: recommendation
+    summary: "Even in auto-allow mode, rm/rmdir commands targeting critical paths still go through the regular permission flow."
+    threats:
+      - destructive-action
+    rqs:
+      - RQ6
+    evidence_type: vendor-claim
+    tradeoffs: []
+    bypasses_limits: []
+    quote: "commands that target a[critical path](/docs/en/permission-modes#critical-paths) still go through the regular permission flow"
+    location: "Section: Sandbox modes / Auto-allow mode"
+  - practice: harness-permissions
+    stance: recommends
+    qualifier: weakening-option
+    claim_kind: recommendation
+    summary: "--dangerously-skip-permissions is blocked as root outside a recognized sandbox; for autonomous runs, use the dev container configuration running as non-root."
+    threats:
+      - destructive-action
+    rqs:
+      - RQ2
+      - RQ6
+    evidence_type: vendor-claim
+    tradeoffs: []
+    bypasses_limits:
+      - "The root check is skipped automatically inside a recognized sandbox."
+    quote: "this flag is blocked when running as root or via sudo on Linux and macOS, because root access combined with no permission prompts can modify any file or service on the system."
+    location: "Section: Troubleshooting"
+threat_model:
+  framework: null
+  assets:
+    - value: "Credential files such as ~/.aws/credentials and ~/.ssh/, and secret environment variables"
+      tag: secrets-credentials
+      quote: |-
+        read access to the entire computer, except certain denied directories. Note that this default still allows reading credential files such as`~/.aws/credentials` and`~/.ssh/` .
+      location: "Section: Filesystem isolation"
+    - value: "Claude Code configuration and credential store in ~/.claude (.credentials.json)"
+      tag: model-api-key
+      quote: |-
+        most of its contents, plus`~/.claude.json` and the`.credentials.json` credential store
+      location: "Section: Protected paths"
+    - value: "Host filesystem outside the project"
+      tag: host-system
+      quote: "With the filesystem layer off, sandboxed commands get unrestricted read and write access to the host filesystem"
+      location: "Section: Disable filesystem isolation"
+  input_channels:
+    - value: "Checked-out project settings files (.claude/settings.json, .claude/settings.local.json)"
+      tag: repo-config
+      quote: |-
+        Project settings in`.claude/settings.json` and`.claude/settings.local.json` can’t, so a checked-out project can’t switch filesystem isolation off.
+      location: "Section: Which settings can disable it"
+  failure_modes:
+    - value: "Sandboxed command edits Claude Code config to grant itself permissions or add hooks/MCP servers that run outside the sandbox"
+      threat: permission-bypass
+      quote: "A command that could edit those files could grant itself permissions, or add a hook or MCP server that Claude Code runs outside the sandbox."
+      location: "Section: Protected paths"
+    - value: "Writable $PATH dirs or shell rc files lead to code execution in other security contexts"
+      threat: host-delayed-execution
+      quote: |-
+        Allowing writes to directories containing executables in`$PATH` , system configuration directories, or user shell configuration files such as`.bashrc` or`.zshrc` can lead to code execution in different security contexts when other users or system processes access these files.
+      location: "Section: Security limitations"
+    - value: "Allowed Docker socket grants host access"
+      threat: sandbox-escape
+      quote: |-
+        For example, allowing access to`/var/run/docker.sock` effectively grants access to the host system through the Docker socket.
+      location: "Section: Security limitations"
+    - value: "Credentials in inherited environment exposed to sandboxed commands"
+      threat: secret-exfiltration
+      quote: "sandboxed Bash commands inherit the parent process environment by default, including any credentials set there."
+      location: "Section: Limitations / Scope"
+contested_positions:
+  - topic: shared-kernel-vs-vm
+    position: "The built-in OS sandbox is described as risk reduction, not a complete isolation boundary or hard security control; comparison with containers and VMs is deferred to a separate Sandbox environments page, with no VM argument made here."
+    quote: "Sandboxing reduces risk but is not a complete isolation boundary. Review the limitations below before relying on it as a hard security control."
+    location: "Section: Limitations"
+  - topic: egress-allowlist-sufficiency
+    position: "The built-in proxy only filters by hostname and does not inspect TLS, so users must allow only trusted domains; organizations whose threat model needs content inspection should use a custom proxy."
+    quote: "The built-in proxy enforces the allowlist based on the requested hostname and, by default, does not terminate or inspect TLS traffic."
+    location: "Section: Network isolation"
+  - topic: host-delayed-execution
+    position: "Treated as a real risk: the sandbox denies writes to hooks, Claude config, MCP config, shell startup files, .gitconfig, .vscode/.idea, and .git hooks/config even inside writable directories, because those could run code outside the sandbox."
+    quote: "Inside the directories that sandboxed commands can write to, the sandbox still denies writes to the files Claude Code loads configuration and code from. A command that could edit those files could grant itself permissions, or add a hook or MCP server that Claude Code runs outside the sandbox."
+    location: "Section: Protected paths"
+  - topic: harness-permissions-as-boundary
+    position: "Permissions and the sandbox are presented as complementary layers: permissions decide whether a call runs, while the sandbox enforces access at OS level once it runs. Built-in file tools rely on permissions alone. The source does not explicitly call permissions a security boundary."
+    quote: "Permission modes decide whether a tool call runs and whether you are prompted first, while the sandbox restricts what a Bash command can access once it runs."
+    location: "Section: Permission modes"
+notes: "Metadata matches the CSV. The title does not appear in the cleaned text, which starts mid-page. The page is living and undated; it references Claude Code versions up to v2.1.271. The clean.md has extraction artifacts: JSON/shell code examples and tables are missing, and link text is fragmented across lines. The source never mentions prompt injection explicitly; its threat model is implicit, centered on what sandboxed commands can read, write, and reach. No prompt-injection payloads found in the source. Operational content was skipped: platform setup, AppArmor profile for bwrap on Ubuntu 24.04, TMPDIR handling, IPv6 spelling rules, troubleshooting. The enableWeakerNetworkIsolation setting is mentioned for MITM-proxy setups without a security discussion. The @anthropic-ai/sandbox-runtime package for wrapping the whole Claude Code process is covered on a separate page."

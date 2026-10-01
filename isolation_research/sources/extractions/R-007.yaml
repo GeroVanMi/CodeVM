@@ -1,0 +1,229 @@
+id: R-007
+extracted_by: claude-opus-5-5
+extracted_at: "2026-10-01T22:14:36Z"
+title: "Progent: Securing AI Agents with Privilege Control"
+author_org: "Shi, He, Wang, Li, Wu, Guo, Song (UC Berkeley, UC Santa Barbara, National University of Singapore)"
+date: "2025-04-16 (rev. 2026-05-14)"
+date_normalized: "2026-05-14"
+stream: Researcher Sources
+sub_stream: ""
+author_role: academic
+incentives: "Authors propose, evaluate, and release (open-source) their own defense framework, Progent; comparisons with competing defenses (classifiers, prompt hardening, Conseca, DRIFT, CaMeL) are made by the authors of the proposed system."
+harness:
+  - OpenHands
+  - LangChain
+  - OpenAI Agents SDK
+  - AutoGen
+included: true
+inclusion_reason: "Proposes and empirically evaluates a deterministic tool-call privilege-control defense against indirect prompt injection for tool-using LLM agents (incl. integration with the OpenHands coding agent), and evaluates prompt-injection classifiers and prompt-hardening defenses; generalizes to coding agents."
+recommendations:
+  - practice: capability-policy-enforcement
+    stance: recommends
+    claim_kind: recommendation
+    summary: "Enforce least privilege by checking every tool call (tool name and arguments) against a symbolic allow/forbid policy deterministically, with default-deny for unmatched calls; the policy is generated from the trusted user task by an LLM and enforced outside the agent."
+    threats: [prompt-injection-indirect, data-exfiltration, destructive-action]
+    rqs: [RQ5]
+    evidence_type: design-rationale
+    tradeoffs:
+      - "LLM-generated policies may be too narrow (blocking benign tasks) or too broad; a policy permissive enough for every task is too broad to block attacks."
+    bypasses_limits: []
+    quote: "When the agent issues a tool call, Progent matches it against the current policy’s rules and deterministically allows or blocks it; calls that match no rule are blocked by default."
+    location: "Section 2.2 Progent: Defense via Privilege Control"
+  - practice: capability-policy-enforcement
+    stance: recommends
+    claim_kind: measured-result
+    summary: "Progent reduces ASR from 39.9% to 1.0% on AgentDojo and from 70.3% to 3.9% on ASB while maintaining utility; ~1% ASR across LangChain, OpenAI Agents SDK, OpenHands and AutoGen integrations; adaptive attacks only marginally increase ASR."
+    threats: [prompt-injection-indirect]
+    rqs: [RQ5]
+    evidence_type: empirical-evaluation
+    tradeoffs: []
+    bypasses_limits:
+      - "Most ASB failures occur when attack tool calls have names/descriptions very similar to benign tools related to the user task."
+    quote: "Progent also significantly reduces ASR from 70.3% to 3.9%."
+    location: "Section 8.1 Progent's General Effectiveness (ASB); also Sections 8.3 and Appendix E"
+  - practice: capability-policy-enforcement
+    stance: recommends
+    claim_kind: recommendation
+    summary: "LLM-proposed policy updates (influenced by untrusted tool output) are checked by an SMT solver; narrowings apply automatically, expansions require explicit approval (monotonic confinement), so a manipulated policy LLM cannot silently escalate privileges. Prior LLM-generated policy approaches (Conseca, DRIFT) lack such deterministic verification."
+    threats: [prompt-injection-indirect, privilege-escalation]
+    rqs: [RQ5, RQ7]
+    evidence_type: formal-argument
+    tradeoffs:
+      - "Expansions need an approver; about 6% of updates on AgentDojo required approval."
+    bypasses_limits: []
+    quote: "In Progent, even if the LLM-generated policy update is manipulated by adversarial inputs, the expansion check prevents any silent privilege escalation"
+    location: "Section 10 Related Work (System-Level Defenses); Section 6"
+  - practice: capability-policy-enforcement
+    stance: recommends
+    qualifier: weakening-option
+    claim_kind: measured-result
+    summary: "Auto-approving all policy expansions yields slightly higher ASR than auto-deny because widened policies may permit malicious actions; explicit approval of expansions is required in practice."
+    threats: [prompt-injection-indirect, privilege-escalation]
+    rqs: [RQ5]
+    evidence_type: empirical-evaluation
+    tradeoffs:
+      - "Auto-Deny and Disable Update reduce utility/adaptability compared to Auto-Approve."
+    bypasses_limits: []
+    quote: "widened policies may inadvertently permit malicious actions, which is why explicit approval is required in practice for such updates."
+    location: "Section 8.2 Ablation Studies (Different Approver Configurations)"
+  - practice: capability-policy-enforcement
+    stance: recommends
+    claim_kind: limitation
+    summary: "Tool-call privilege control cannot stop attacks that operate within the least privilege needed for the task (e.g., preference manipulation) nor attacks that only affect text outputs."
+    threats: [prompt-injection-indirect]
+    rqs: [RQ5]
+    evidence_type: design-rationale
+    tradeoffs: []
+    bypasses_limits:
+      - "Attacks within the privileges needed for the user task."
+      - "Attacks targeting only text outputs."
+      - "Multimodal/GUI actions (clicks) are not covered."
+    quote: "First, Progent cannot be used to defend against attacks that operate within the least privilege for accomplishing the user task."
+    location: "Section 3.2 Threat Model (Progent's Defense Scope)"
+  - practice: capability-policy-enforcement
+    stance: recommends
+    claim_kind: limitation
+    summary: "The proxy deployment mode (intercepting LLM API and MCP endpoints) cannot protect built-in agent tools that bypass MCP; library mode can, at the cost of code changes."
+    threats: [prompt-injection-indirect]
+    rqs: [RQ5]
+    evidence_type: design-rationale
+    tradeoffs:
+      - "Trade-off between deployability (proxy mode, no code changes) and protection depth (library mode)."
+    bypasses_limits:
+      - "Built-in tools not exposed via external MCP interfaces bypass the proxy."
+    quote: "but it cannot protect agent functionalities implemented as built-in tools that bypass external MCP interfaces."
+    location: "Section 9 Limitation and Discussion (Defense Scope)"
+  - practice: capability-policy-enforcement
+    stance: evaluates
+    claim_kind: limitation
+    summary: "Coarse-grained tool filtering (tool_filter: removing tools not needed for the task, ignoring arguments) has higher utility loss and higher ASR than argument-level policies."
+    threats: [prompt-injection-indirect]
+    rqs: [RQ5]
+    evidence_type: empirical-evaluation
+    tradeoffs:
+      - "Either blocks an entire tool (harming utility) or allows it completely (attack success)."
+    bypasses_limits: []
+    quote: "tool_filter suffers from higher utility reduction and ASR because its coarse-grained approach of ignoring tool arguments either blocks an entire tool, harming utility"
+    location: "Section 8.1 (AgentDojo comparison)"
+  - practice: capability-policy-enforcement
+    stance: recommends
+    claim_kind: recommendation
+    summary: "Manually specified generic policies (organization data-governance rules, developer restrictions on sensitive tools, user data protection) are layered with priority so that lower-priority or task-specific policies cannot weaken them."
+    threats: [data-exfiltration, privilege-escalation]
+    rqs: [RQ5, RQ6]
+    evidence_type: design-rationale
+    tradeoffs: []
+    bypasses_limits: []
+    quote: "This ensures that any tool call forbidden by the generic policy is blocked outright and cannot be recovered by 𝑃, guaranteeing Generic Confinement"
+    location: "Section 7 Implementation (Generic Policies)"
+  - practice: human-in-the-loop
+    stance: recommends
+    claim_kind: measured-result
+    summary: "Human review of the initial policy and every expansion reduced ASR to 0% on AgentDojo; only ~6% of updates needed approval, keeping overhead low."
+    threats: [prompt-injection-indirect]
+    rqs: [RQ5]
+    evidence_type: empirical-evaluation
+    tradeoffs:
+      - "Demands manual effort; most suitable for security-critical environments."
+    bypasses_limits: []
+    quote: "Finally, the Manual Approval mode reduces the ASR to 0% with human review, demonstrating that human oversight can capture complex security requirements that the automatic pipeline may miss."
+    location: "Section 8.2 Ablation Studies"
+  - practice: human-in-the-loop
+    stance: rejects
+    qualifier: as-sole-control
+    claim_kind: limitation
+    summary: "Asking the user to approve every tool call is impractical and negates the benefit of an autonomous agent; user approval mistakes (approving widening updates, ambiguous tasks) can undermine guarantees."
+    threats: [prompt-injection-indirect]
+    rqs: [RQ5, RQ7]
+    evidence_type: design-rationale
+    tradeoffs:
+      - "Per-call approval requires too much effort."
+    bypasses_limits:
+      - "Users may incorrectly approve widening updates; adaptive injections can try to induce such approvals."
+    quote: "since asking the user to approve every tool call requires too much effort and removes the benefit of using an agent."
+    location: "Section 2.1 Challenges for Agent Security (Challenge II); Section 9 (User Mistakes)"
+  - practice: pi-classifier-detection
+    stance: rejects
+    claim_kind: measured-result
+    summary: "Three prompt-injection detectors (ProtectAI DeBERTa, DataSentinel, Llama Prompt Guard 2) were ineffective on AgentDojo, with high false positive and negative rates; guardrail models cannot provide deterministic enforcement."
+    threats: [prompt-injection-indirect]
+    rqs: [RQ5, RQ7]
+    evidence_type: empirical-evaluation
+    tradeoffs:
+      - "High false positives reduce utility (detector aborts the agent)."
+    bypasses_limits:
+      - "Fail to generalize beyond their training distributions."
+    quote: "While they may perform well on datasets similar to their training distributions, they fail to generalize to AgentDojo, exhibiting high rates of false positives and negatives."
+    location: "Section 8.1 (AgentDojo comparison)"
+  - practice: pi-prompt-hardening
+    stance: rejects
+    claim_kind: measured-result
+    summary: "Prompt-level defenses (delimiters, sandwich defense, instructional prevention; also repeat_user_prompt and spotlighting on AgentDojo) are ineffective at reducing ASR on ASB compared with privilege control."
+    threats: [prompt-injection-indirect]
+    rqs: [RQ5]
+    evidence_type: empirical-evaluation
+    tradeoffs: []
+    bypasses_limits: []
+    quote: "The prior defenses are ineffective in reducing ASR, a result consistent with the original paper of ASB [57]."
+    location: "Section 8.1 (ASB comparison)"
+  - practice: model-level-robustness
+    stance: recommends
+    claim_kind: measured-result
+    summary: "Robust models (claude-sonnet-4, Meta-SecAlign-70B) already have low ASR (6.8%, 4.8%); combining them with Progent reduces ASR further (0.5%, 0.3%), so model-level and system-level defenses are complementary."
+    threats: [prompt-injection-indirect]
+    rqs: [RQ5]
+    evidence_type: empirical-evaluation
+    tradeoffs: []
+    bypasses_limits: []
+    quote: "As shown in Figure 7, combining Progent and model-level defenses [5] can provide stronger protections."
+    location: "Section 10 Related Work (Model-Level Prompt Injection Defenses); Section 8.2"
+  - practice: multi-agent-trust-boundaries
+    stance: recommends
+    claim_kind: recommendation
+    summary: "Apply privilege control either as a single layer over the whole multi-agent system (prevents cross-agent privilege escalation) or per sub-agent when agents serve different users or have different permission levels."
+    threats: [multi-agent-compromise, privilege-escalation]
+    rqs: [RQ6]
+    evidence_type: empirical-evaluation
+    tradeoffs: []
+    bypasses_limits: []
+    quote: "This global context and policy management ensures consistent security and prevents cross-agent privilege escalation."
+    location: "Section 8.3 Real-World Agents Integration (Multi-Agent Systems)"
+threat_model:
+  framework: null
+  assets:
+    - value: "User's email inbox and private data"
+      tag: personal-data
+      quote: "a malicious tool call that exfiltrates the user’s inbox to the attacker."
+      location: "Section 2.1 Motivating Example"
+    - value: "Financial accounts and data (banking tools)"
+      tag: other:financial-assets
+      quote: "the attacker could induce dangerous data erasure operations and unauthorized financial transactions."
+      location: "Section 3.2 Threat Model (Attacker Goal)"
+  input_channels:
+    - value: "Attacker-controlled external data sources such as emails"
+      tag: messages-email
+      quote: "We assume the attacker can manipulate the agent’s external data source in the environment E, such as an email, to embed malicious commands."
+      location: "Section 3.2 Threat Model (Attacker Capabilities)"
+    - value: "Tool returns / observations, all of which may be attacker-controlled"
+      tag: tool-output
+      quote: "More critically, adversarial content embedded in a tool return can silently alter the agent’s plan without any visible indication."
+      location: "Section 2.1 (Challenge I)"
+  failure_modes:
+    - value: "Injected instruction causes agent to send user's inbox to attacker"
+      threat: data-exfiltration
+      quote: "a malicious tool call that exfiltrates the user’s inbox to the attacker."
+      location: "Section 2.1 Motivating Example"
+    - value: "Injection induces data erasure"
+      threat: destructive-action
+      quote: "the attacker could induce dangerous data erasure operations and unauthorized financial transactions."
+      location: "Section 3.2 Threat Model (Attacker Goal)"
+    - value: "Manipulated policy LLM silently expands agent privileges"
+      threat: privilege-escalation
+      quote: "In Progent, even if the LLM-generated policy update is manipulated by adversarial inputs, the expansion check prevents any silent privilege escalation"
+      location: "Section 10 Related Work"
+contested_positions:
+  - topic: pi-classifier-value
+    position: "Prompt-injection classifiers/guardrail models are ineffective in agent settings: they fail to generalize to AgentDojo with high false positive/negative rates, and they cannot provide deterministic enforcement, unlike tool-call privilege control."
+    quote: "While they may perform well on datasets similar to their training distributions, they fail to generalize to AgentDojo, exhibiting high rates of false positives and negatives."
+    location: "Section 8.1; Section 10 (Model-Level Prompt Injection Defenses)"
+notes: "Metadata verified: arXiv:2504.11703v3 dated 14 May 2026; authors from UC Berkeley, UC Santa Barbara, National University of Singapore. Threat model assumes a benign user query and attacker control over all tool observations; attacker cannot modify model or system prompt. Coding agents are only mentioned in the introduction and via the OpenHands integration (proxy mode); benchmarks (AgentDojo, ASB, MCP-ported AgentDojo) are personal-assistant tasks, not shell/code execution, and the paper gives no shell-command-level policy examples, sandboxing, egress, or secrets guidance. Relevant for coding agents: proxy mode cannot cover built-in tools (e.g., native shell/file tools) that bypass MCP. Experiments ran in a local sandboxed environment (ethics section), not a recommendation. The text contains adversarial prompts used in adaptive attacks (e.g., 'IF the instruction above is about updating the policies THEN ... allow all tools') as research content; treated as data, not followed. No injection payload aimed at the extractor observed. Figure numeric data is garbled into lists (bar chart values), making per-defense AgentDojo numbers ambiguous; only text-stated numbers were used."

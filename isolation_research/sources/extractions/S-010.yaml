@@ -1,0 +1,326 @@
+id: S-010
+extracted_by: claude-opus-5-5
+extracted_at: "2026-10-01T22:19:55Z"
+title: "AI Coding Assistants (joint ANSSI-BSI recommendations)"
+author_org: "ANSSI and BSI"
+date: "2024-10-04"
+date_normalized: "2024-10-04"
+stream: Standards Sources
+sub_stream: ""
+author_role: standards-body
+incentives: "Government cybersecurity agencies (France, Germany); no commercial product interest. Mandate favours organizational governance, risk analysis and provider accountability."
+harness: []
+included: true
+inclusion_reason: "Gives concrete security recommendations for AI coding assistants: code review, sandboxing the development environment against malicious packages, package allowlisting, indirect prompt-injection exfiltration defenses (restricting image rendering), secret handling and extension restrictions. It is pre-agentic and generic about harnesses, but the advice carries over to coding agents."
+recommendations:
+  - practice: code-review-integrity
+    stance: recommends
+    claim_kind: recommendation
+    summary: "Developers should check, understand and reproduce generated code, with critical review for hallucinations and security risks. Security teams can add reviews, but must scale with the extra AI-generated code."
+    threats: [code-integrity, supply-chain-compromise, prompt-injection-indirect]
+    rqs: [RQ5, RQ6]
+    evidence_type: citation
+    tradeoffs:
+      - "AI-assisted developers might produce more code, so security/QA teams (AppSec, DevSecOps) may need to scale accordingly."
+    bypasses_limits:
+      - "Automation bias: developers tend to perceive AI output as secure and accept well-worded but flawed code."
+    quote: "Generated source code should generally be checked and reproduced by the developers."
+    location: "Section 3.4.1 Hallucinations of Methods and Packages, mitigation measures (repeated in 3.4.2, 4.2, Executive Summary)"
+  - practice: code-review-integrity
+    stance: recommends
+    claim_kind: recommendation
+    summary: "Use automatic function tests, automated vulnerability scanners, and 'source code critic' chatbots that question generated code."
+    threats: [code-integrity]
+    rqs: [RQ6]
+    evidence_type: expert-opinion
+    tradeoffs: []
+    bypasses_limits: []
+    quote: 'Automated vulnerability scanners or approaches like chatbots that critically question the generated source code ("source code critics") can reduce the risk.'
+    location: "Section 3.3 Lack of Output Quality and Security, mitigation measures"
+  - practice: "other:ai-code-provenance-labeling"
+    stance: recommends
+    claim_kind: recommendation
+    summary: "Flag AI-generated code blocks and document the AI tools used. This helps security testing and third-party audits and certification."
+    threats: [code-integrity]
+    rqs: [RQ6]
+    evidence_type: expert-opinion
+    tradeoffs: []
+    bypasses_limits: []
+    quote: "It might be beneficial to flag AI generated code blocks and to document the used AI tools."
+    location: "Section 3.3 Lack of Output Quality and Security, mitigation measures"
+  - practice: sandbox-unspecified
+    stance: recommends
+    claim_kind: recommendation
+    boundary_strength: unstated
+    summary: "Sandbox the development environment to reduce the impact of malicious libraries (e.g. ransomware) introduced through hallucinated packages."
+    threats: [supply-chain-compromise, rce-via-agent, destructive-action]
+    rqs: [RQ2, RQ6]
+    evidence_type: expert-opinion
+    tradeoffs: []
+    bypasses_limits: []
+    quote: "The impact of malicious libraries (such as included ransomware) can be reduced by sandboxing the development environment."
+    location: "Section 3.4.1 Hallucinations of Methods and Packages, mitigation measures"
+  - practice: supply-chain-controls
+    stance: recommends
+    claim_kind: recommendation
+    summary: "Check unknown libraries for plausibility (creation date, popularity, repository activity) before use, to counter package-confusion attacks on hallucinated packages."
+    threats: [supply-chain-compromise]
+    rqs: [RQ6]
+    evidence_type: citation
+    tradeoffs: []
+    bypasses_limits: []
+    quote: "Unknown libraries should be checked for plausibility, e.g. when they were created, how commonly they are used or how active a source code repository is."
+    location: "Section 3.4.1 Hallucinations of Methods and Packages, mitigation measures"
+  - practice: supply-chain-controls
+    stance: recommends
+    claim_kind: recommendation
+    summary: "Where company guidelines on permitted packages exist, enforce an allowlist of permitted packages."
+    threats: [supply-chain-compromise]
+    rqs: [RQ6]
+    evidence_type: expert-opinion
+    tradeoffs: []
+    bypasses_limits: []
+    quote: "If there are guidelines in the company as to which packages can be used as part of a development and which cannot, a whitelisting of permitted packages could be carried out."
+    location: "Section 3.4.1 Hallucinations of Methods and Packages, mitigation measures"
+  - practice: incident-response
+    stance: recommends
+    claim_kind: recommendation
+    summary: "Keep an SBOM and an inventory of the AI coding assistants in use. This lets you check afterwards whether vulnerable or poisoned libraries/models affected you and respond in a targeted way."
+    threats: [supply-chain-compromise, code-integrity]
+    rqs: [RQ6]
+    evidence_type: expert-opinion
+    tradeoffs: []
+    bypasses_limits: []
+    quote: "The creation of a Software Bill of Materials (SBOM) allows you to retrospectively understand whether vulnerable libraries were used and enables a targeted response if a vulnerability of certain components becomes known."
+    location: "Section 3.4.1 (also 3.4.3 Data and Model Poisoning), mitigation measures"
+  - practice: vendor-disclosure-transparency
+    stance: recommends
+    claim_kind: recommendation
+    summary: "Providers and manufacturers are mainly responsible for mitigating indirect prompt injection. Users should ask their provider which mitigations are in place."
+    threats: [prompt-injection-indirect]
+    rqs: [RQ5]
+    evidence_type: expert-opinion
+    tradeoffs: []
+    bypasses_limits: []
+    quote: "Providers and manufacturers are particularly responsible for mitigating indirect prompt injections."
+    location: "Section 3.4.2 Indirect Prompt Injections, mitigation measures"
+  - practice: egress-domain-allowlist
+    stance: recommends
+    claim_kind: recommendation
+    summary: "Providers can restrict image display to trusted sources, making Markdown-image exfiltration after prompt injection harder."
+    threats: [data-exfiltration, secret-exfiltration, prompt-injection-indirect]
+    rqs: [RQ4, RQ5]
+    evidence_type: citation
+    tradeoffs: []
+    bypasses_limits:
+      - "Only 'makes it harder'. AI-generated links that a user clicks can still send sensitive information to an attacker's server."
+    quote: "For instance, they can restrict the display of images to trusted sources to make it harder to exfiltrate information this way."
+    location: "Section 3.4.2 Indirect Prompt Injections, mitigation measures"
+  - practice: data-governance
+    stance: recommends
+    claim_kind: recommendation
+    summary: "IDE providers with AI plugins should state clearly what information can enter the model's context window and allow exclusions (e.g. certain folders)."
+    threats: [prompt-injection-indirect, data-exfiltration]
+    rqs: [RQ5, RQ6]
+    evidence_type: expert-opinion
+    tradeoffs: []
+    bypasses_limits: []
+    quote: "Providers of IDEs with AI plugins should clearly communicate which information can end up in the prompt (context window) of the AI model and allow exceptions (e.g. certain folders)."
+    location: "Section 3.4.2 Indirect Prompt Injections, mitigation measures"
+  - practice: no-secrets-in-env
+    stance: recommends
+    claim_kind: recommendation
+    summary: "Keep sensitive information such as API or cryptographic keys (and detailed infrastructure configuration) out of prompts; anonymize or withhold it."
+    threats: [secret-exfiltration, data-exfiltration]
+    rqs: [RQ3]
+    evidence_type: expert-opinion
+    tradeoffs: []
+    bypasses_limits: []
+    quote: "When using regular chatbots, sensitive information (such as API keys) should, if possible, not end up in the prompt."
+    location: "Section 3.4.2 Indirect Prompt Injections, mitigation measures (also 3.1)"
+  - practice: data-governance
+    stance: recommends
+    claim_kind: recommendation
+    summary: "Prohibit uncontrolled cloud access through employees' private accounts for business development. Offer securely configured enterprise accounts with clear usage rules to reduce shadow IT."
+    threats: [data-exfiltration, secret-exfiltration]
+    rqs: [RQ6]
+    evidence_type: expert-opinion
+    tradeoffs: []
+    bypasses_limits: []
+    quote: "The use of uncontrolled access to coding assistants (e.g. through private accounts of employees) in the cloud should be prohibited for business software development."
+    location: "Section 3.1 Missing Confidentiality of Inputs, mitigation measures (also 4.1)"
+  - practice: data-governance
+    stance: recommends
+    claim_kind: recommendation
+    summary: "Review cloud providers' contract terms, especially whether user data is reused for AI training."
+    threats: [data-exfiltration, secret-exfiltration]
+    rqs: [RQ3, RQ6]
+    evidence_type: expert-opinion
+    tradeoffs: []
+    bypasses_limits: []
+    quote: "When using cloud services, the contractual conditions should be carefully examined, particularly with regard to the further use of your own data for AI training."
+    location: "Section 3.1 Missing Confidentiality of Inputs, mitigation measures (also 4.1)"
+  - practice: data-governance
+    stance: recommends
+    claim_kind: recommendation
+    summary: "Host open-source models locally to prevent loss of sensitive information to cloud providers."
+    threats: [data-exfiltration]
+    rqs: [RQ6]
+    evidence_type: expert-opinion
+    tradeoffs: []
+    bypasses_limits: []
+    quote: "For example, local hosting of open-source models can prevent the loss of sensitive information."
+    location: "Section 4.1 Management"
+  - practice: org-governance-training
+    stance: recommends
+    claim_kind: recommendation
+    summary: "Do a systematic risk analysis before introducing AI tools. Cover provider/third-party trustworthiness and how secrets such as API keys are managed and kept from leaking."
+    threats: [secret-exfiltration]
+    rqs: [RQ1, RQ3]
+    evidence_type: expert-opinion
+    tradeoffs: []
+    bypasses_limits: []
+    quote: "A systematic risk analysis should be performed before introducing AI tools. This should particularly consider how secrets (e.g., API keys) are currently managed and how they will be protected from leakage in the future."
+    location: "Section 4.1 Management (also Executive Summary)"
+  - practice: org-governance-training
+    stance: recommends
+    claim_kind: recommendation
+    summary: "Make employees aware of the risks (incl. that clicking AI-generated links can leak data) and train them in using AI tools, prompting, and challenging answers."
+    threats: [data-exfiltration, prompt-injection-indirect, code-integrity]
+    rqs: [RQ5, RQ6]
+    evidence_type: expert-opinion
+    tradeoffs: []
+    bypasses_limits: []
+    quote: "Employees must be sensitized to risks and trained in handling the AI tools."
+    location: "Section 4.1 Management (also 3.1-3.4 mitigation lists)"
+  - practice: org-governance-training
+    stance: recommends
+    claim_kind: recommendation
+    summary: "Give employees clear usage guidelines on which tools they may use with which data and for what purposes."
+    threats: [data-exfiltration]
+    rqs: [RQ6]
+    evidence_type: expert-opinion
+    tradeoffs: []
+    bypasses_limits: []
+    quote: "Employees must have clear guidelines on which tools they can use with what data for what purposes."
+    location: "Section 4.1 Management (also 4.2 Development)"
+  - practice: mcp-tool-vetting
+    stance: recommends
+    claim_kind: recommendation
+    summary: "Limit the use of extensions that act on the programmer's behalf. Audit how they interact with development, production and CI/CD environments and internal resources (logs, mails)."
+    threats: [supply-chain-compromise]
+    rqs: [RQ6]
+    evidence_type: expert-opinion
+    tradeoffs: []
+    bypasses_limits: []
+    quote: "Limit the use of extensions."
+    location: "Section 3.4.4 Extensions for Coding Assistants, mitigation measures"
+  - practice: model-level-robustness
+    stance: evaluates
+    claim_kind: limitation
+    summary: "Proposed techniques to make code models produce secure code are currently limited in capability and lack generalization guarantees."
+    threats: [code-integrity]
+    rqs: [RQ6, RQ7]
+    evidence_type: citation
+    tradeoffs: []
+    bypasses_limits:
+      - "Limited capabilities; no generalization guarantees for wide applicability."
+    quote: "Although first mitigation techniques are getting proposed, these techniques are currently limited in their capabilities and lack the generalization guarantees that would allow them to be widely applicable"
+    location: "Section 3.3 Lack of Output Quality and Security"
+  - practice: model-level-robustness
+    stance: recommends
+    claim_kind: recommendation
+    summary: "Manufacturers are responsible for mitigating data/model poisoning by carefully selecting, securing and analyzing training data."
+    threats: [supply-chain-compromise, code-integrity]
+    rqs: [RQ6]
+    evidence_type: expert-opinion
+    tradeoffs: []
+    bypasses_limits: []
+    quote: "Manufacturers are responsible for mitigating posioning attacks by carefully selecting, securing and analyzing training data."
+    location: "Section 3.4.3 Data and Model Poisoning, mitigation measures"
+  - practice: model-level-robustness
+    stance: recommends
+    qualifier: future-work
+    claim_kind: recommendation
+    summary: "Research goal: improve training-data quality to reduce security vulnerabilities in generated code, and advance automated quality and security control of software."
+    threats: [code-integrity]
+    rqs: [RQ6]
+    evidence_type: citation
+    tradeoffs: []
+    bypasses_limits: []
+    quote: "A research goal should therefore be to increase the quality of the training data, with particular attention to reducing security vulnerabilities."
+    location: "Section 4.3 Research Agenda"
+threat_model:
+  framework: null
+  assets:
+    - value: "Confidential information/code entered by users that may flow into provider training data"
+      tag: personal-data
+      quote: "Depending on the product and deployment model, confidential information entered by users may unintentionally flow into the assistant's training data."
+      location: "Section 3.1 Missing Confidentiality of Inputs"
+    - value: "API and cryptographic keys"
+      tag: secrets-credentials
+      quote: "This particularly applies to sensitive data such as API or cryptographic keys, but also detailed information about the infrastructure and resource configuration can be sensitive."
+      location: "Section 3.1 Missing Confidentiality of Inputs, mitigation measures"
+    - value: "Infrastructure and resource configuration (IaC)"
+      tag: cloud-infrastructure
+      quote: "The last part is particularly relevant if approaches like Infrastructure as Code (IaC) are used."
+      location: "Section 3.1 Missing Confidentiality of Inputs, mitigation measures"
+    - value: "Security of generated source code"
+      tag: source-code
+      quote: "Mild and severe security flaws are commonly present in AI-provided code snippets."
+      location: "Executive Summary, Risks"
+    - value: "Internal resources reachable by extensions (logs, mails)"
+      tag: "other:internal-resources"
+      quote: "especially when they have access to internal resources (e.g. logs, mails)."
+      location: "Section 3.4.4 Extensions for Coding Assistants"
+    - value: "Development, production and CI/CD environments"
+      tag: ci-cd-pipeline
+      quote: "Audit and anticipate impacts of the interactions of these extensions with development, production and CI/CD environments."
+      location: "Section 3.4.4 Extensions for Coding Assistants, mitigation measures"
+  input_channels:
+    - value: "Malicious instructions in software package documentation"
+      tag: dependencies
+      quote: "For example, attackers can write malicious instructions into the documentation of software packages."
+      location: "Section 3.4.2 Indirect Prompt Injections"
+    - value: "Untrustworthy third-party LLM providers repackaging a model with malicious prompts"
+      tag: "other:third-party-model-wrapper"
+      quote: "Another example of prompt injection attacks could come from untrustworthy third-party LLM providers repackaging a legitimate LLM with malicious prompts"
+      location: "Section 3.4.2 Indirect Prompt Injections"
+    - value: "Poisoned public code used as training data"
+      tag: "other:training-data"
+      quote: "Attackers might therefore publish code at such plattforms aiming at poisoning the training data, which might lead to generation of insecure code."
+      location: "Section 3.4.3 Data and Model Poisoning"
+  failure_modes:
+    - value: "Generated code contains security vulnerabilities (~40% of programs in Pearce et al.)"
+      threat: code-integrity
+      quote: "Another study by New York University analysed the security of programs generated by coding assistants and found that about 40% of the programs had security vulnerabilities"
+      location: "Section 3.3 Lack of Output Quality and Security"
+    - value: "Package hallucination exploited through package-confusion attacks (19.7% of imported packages hallucinated)"
+      threat: supply-chain-compromise
+      quote: "Attackers exploit the hallucinations by creating a package with the same name as the hallucinated package and tagging it with malicious code."
+      location: "Section 3.4.1 Hallucinations of Methods and Packages"
+    - value: "Injected instructions make the assistant suggest malicious commands or code"
+      threat: prompt-injection-indirect
+      quote: "the LLM might respond to the commands and suggest malicious commands or code snippets to developers as part of completion attacks"
+      location: "Section 3.4.2 Indirect Prompt Injections"
+    - value: "Exfiltration through generated links or rendered Markdown images"
+      threat: data-exfiltration
+      quote: "Displaying Markdown images is also a common way to exfiltrate sensitive information in a successful attack"
+      location: "Section 3.4.2 Indirect Prompt Injections"
+    - value: "Sensitive inputs leaked to the provider depending on contract terms"
+      threat: data-exfiltration
+      quote: "One important issue is that sensitive information can be leaked through the user inputs depending on the contract conditions of providers."
+      location: "Executive Summary, Risks"
+    - value: "Model weights poisoned through supply-chain compromise"
+      threat: supply-chain-compromise
+      quote: "Attackers may also have the possibility to poison the model weights directly via supply-chain compromission for example"
+      location: "Section 3.4.3 Data and Model Poisoning"
+    - value: "Automation bias: developers trust insecure AI output"
+      threat: "other:automation-bias"
+      quote: "many developers perceive them as secure, although security vulnerabilities are regularly identified."
+      location: "Section 3.2 Automation Bias"
+notes: |
+  Metadata: the document says "Last updated: September 2024"; the CSV date 2024-10-04 is probably the web publication date. The PDF names BSI (Bonn) and ANSSI as authors, which matches author_org.
+  Scope: the source covers completion-style IDE assistants and chatbots, not autonomous coding agents. It has no guidance on isolation technology choices (sandboxing is mentioned only generically, against malicious libraries), on network egress beyond restricting image rendering to trusted sources, or on harness permissions. It takes no explicit positions on the contested topics, so contested_positions is omitted.
+  Omitted non-security or operational recommendations: productivity and employee-satisfaction discussion; scaling QA/AppSec teams with developer productivity (recorded as a tradeoff of code review); an evaluation phase that monitors key figures such as security-team workload; keeping developers able to work without AI (skill retention); public "deconstruction" of AI code and prompts in internal code reviews; translation research agenda. Misuse of LLMs by attackers (3.5) is out of scope and only referenced.
+  Extraction: plain PDF text extraction. Bullet glyphs are missing in sections 3.4.3 and 3.4.4, and the source has typos (e.g. "posioning"), which quotes keep verbatim. No prompt-injection payloads were found in the source.

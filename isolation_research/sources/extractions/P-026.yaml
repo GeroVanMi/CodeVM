@@ -1,0 +1,130 @@
+id: P-026
+extracted_by: claude-opus-5-5
+extracted_at: "2026-10-01T22:12:06Z"
+title: "CVE-2025-66479: Anthropic's Silent Fix and the CVE That Claude Code Never Got"
+author_org: "Aonan Guan"
+date: "2025-12-03"
+date_normalized: "2025-12-03"
+stream: Practitioner Sources
+sub_stream: Security Firms and Independent Researchers
+author_role: independent-practitioner
+incentives: "Independent security researcher who reported the bug via HackerOne (bug bounty) and was refused a Claude Code CVE; has a reputational interest in getting credit and in stressing the severity and the vendor's poor disclosure."
+harness:
+  - Claude Code
+included: true
+inclusion_reason: "Discloses and demonstrates a real vulnerability (CVE-2025-66479) in Claude Code's sandbox-runtime network isolation, with impact analysis, remediation and incident-response steps, and a critique of vendor disclosure practice."
+recommendations:
+  - practice: egress-deny-all
+    stance: evaluates
+    claim_kind: limitation
+    summary: "Claude Code's sandbox egress config `allowedDomains: []` was documented as 'no network access' but the sandbox-runtime implementation (< 0.0.16) disabled all network restrictions, which allowed unrestricted outbound connections, internal network scanning and data exfiltration. This affected macOS and Linux."
+    threats:
+      - egress-bypass
+      - data-exfiltration
+      - lateral-movement
+    rqs:
+      - RQ4
+      - RQ7
+    evidence_type: exploit-demonstration
+    tradeoffs: []
+    bypasses_limits:
+      - "An empty allowedDomains array evaluated as 'no restriction needed' (0 > 0 = false), so the sandbox network isolation was fully disabled."
+      - "The documented security guarantee did not match the implementation, so users who relied on the config were exposed without knowing it."
+    quote: "When I configured Claude Code’s sandbox with `allowedDomains: []`, expecting complete network isolation, the sandbox was wide open and allowed connections to any server on the internet."
+    location: "Introduction; Technical Analysis > The Vulnerability"
+  - practice: os-sandbox
+    stance: evaluates
+    claim_kind: limitation
+    boundary_strength: unstated
+    summary: "The flaw was not a sophisticated escape. The sandbox's configuration semantics were implemented incorrectly, so the OS-level sandbox (Seatbelt/bubblewrap via sandbox-runtime) left the network open when users configured it to be locked."
+    threats:
+      - egress-bypass
+      - sandbox-escape
+    rqs:
+      - RQ2
+      - RQ4
+    evidence_type: exploit-demonstration
+    tradeoffs: []
+    bypasses_limits:
+      - "Config-semantics bug in the sandbox library silently disabled network isolation."
+    quote: "The configuration semantics were implemented incorrectly, leaving the sandbox door wide open when users explicitly configured it to be locked."
+    location: "Root Cause: Not even a Bypass, Just Left the door Open"
+  - practice: patching-updates
+    stance: recommends
+    claim_kind: recommendation
+    summary: "Update Claude Code to v2.0.55 or later right away. Check that @anthropic-ai/sandbox-runtime is >= 0.0.16."
+    threats:
+      - egress-bypass
+      - data-exfiltration
+    rqs:
+      - RQ4
+      - RQ6
+    evidence_type: incident-report
+    tradeoffs: []
+    bypasses_limits: []
+    quote: "Update Claude Code immediately to v2.0.55 or later"
+    location: "Security Advisory (Since Anthropic Did Not Publish One) > Recommended Actions"
+  - practice: incident-response
+    stance: recommends
+    claim_kind: recommendation
+    summary: "For the vulnerable period (Nov-Dec 2025): review network logs for unexpected outbound or internal connections, audit AI-generated code that ran, and rotate credentials if the sandbox had access to sensitive data."
+    threats:
+      - secret-exfiltration
+      - data-exfiltration
+      - lateral-movement
+    rqs:
+      - RQ3
+      - RQ4
+    evidence_type: incident-report
+    tradeoffs: []
+    bypasses_limits: []
+    quote: "Rotate credentials if sandbox was used with sensitive data access"
+    location: "Security Advisory (Since Anthropic Did Not Publish One) > Recommended Actions"
+  - practice: vendor-disclosure-transparency
+    stance: recommends
+    claim_kind: recommendation
+    summary: "Vendors should give the harness itself a CVE and a security advisory, not only the underlying library, and should label security fixes clearly in changelogs. Anthropic's silent fix, the missing Claude Code CVE and the low CVSS of 1.8 left users unable to judge their exposure. The author contrasts this with how React and Next.js both received CVEs."
+    threats:
+      - egress-bypass
+    rqs:
+      - RQ6
+      - RQ7
+    evidence_type: incident-report
+    tradeoffs: []
+    bypasses_limits: []
+    quote: "While Anthropic responded quickly with a technical fix, the lack of a CVE for Claude Code and the opaque changelog leave users unable to assess their exposure."
+    location: "Conclusion"
+threat_model:
+  framework: null
+  assets:
+    - value: "Sensitive data on servers/machines running the Claude Code sandbox"
+      tag: personal-data
+      quote: "Servers with sensitive data running Claude Code SandBox are at risk"
+      location: "Security Advisory > Impact"
+    - value: "Internal network reachable from the sandbox"
+      tag: internal-network
+      quote: "Internal network scanning and lateral movement possible"
+      location: "Security Advisory > Impact"
+    - value: "Credentials accessible to the sandboxed process"
+      tag: secrets-credentials
+      quote: "Rotate credentials if sandbox was used with sensitive data access"
+      location: "Security Advisory > Recommended Actions"
+  input_channels:
+    - value: "Bad prompt influencing AI-generated code (source unspecified)"
+      tag: "other:unspecified-prompt"
+      quote: "AI generated code (affected by bad prompt) can exfiltrate sensitive data"
+      location: "Security Advisory > Impact"
+  failure_modes:
+    - value: "AI-generated code exfiltrates sensitive data despite a 'no network' config"
+      threat: data-exfiltration
+      quote: "AI generated code (affected by bad prompt) can exfiltrate sensitive data"
+      location: "Security Advisory > Impact"
+    - value: "Network isolation fully disabled when allowedDomains is empty"
+      threat: egress-bypass
+      quote: "Network isolation completely disabled when `allowedDomains: []` configured"
+      location: "Security Advisory > Vulnerability"
+    - value: "Internal network scanning and lateral movement from the sandbox"
+      threat: lateral-movement
+      quote: "Internal network scanning and lateral movement possible"
+      location: "Security Advisory > Impact"
+notes: "The CSV metadata matches the text. The author is an independent security researcher, not a firm; the post's body gives no publication date, and the CSV date of 2025-12-03 fits the timeline (CVE published 2025-12-02). The post quotes the v2.0.55 changelog in two inconsistent ways: 'Fix proxy DNS resolution' and 'Fixed proxy DNS resolution being forced on by default'. The timeline says the issue was raised earlier (Nov 18, 2025) in sandbox-runtime PR #45 by bendrucker; the author reported it on Nov 21 via HackerOne #3437855. The PoC images and video are not in the text. The source takes no explicit position on the contested topics, so contested_positions is omitted; it only shows that an implementation bug defeated the documented deny-all egress setting. No prompt-injection payload found in the source."
