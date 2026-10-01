@@ -1,3 +1,5 @@
 isolation_research/sources/corpus/
 isolation_research/.venv/
 .DS_Store
+isolation_research/sources/extractions/_logs/
+__pycache__/

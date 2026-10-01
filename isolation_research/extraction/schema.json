@@ -1,0 +1,368 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "isolation_research/extraction/schema.json",
+  "title": "Step 3 extraction record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "title",
+    "author_org",
+    "date",
+    "stream",
+    "author_role",
+    "incentives",
+    "harness",
+    "extracted_by",
+    "included",
+    "inclusion_reason",
+    "recommendations",
+    "threat_model",
+    "notes"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[PRS]-\\d{3}$"
+    },
+    "title": {
+      "type": "string"
+    },
+    "author_org": {
+      "type": "string"
+    },
+    "date": {
+      "type": "string"
+    },
+    "stream": {
+      "type": "string"
+    },
+    "sub_stream": {
+      "type": "string"
+    },
+    "author_role": {
+      "$ref": "#/$defs/author_role"
+    },
+    "incentives": {
+      "type": "string",
+      "description": "Commercial or other incentives that may shape the recommendations"
+    },
+    "harness": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "extracted_by": {
+      "type": "string",
+      "minLength": 1
+    },
+    "extracted_at": {
+      "type": "string"
+    },
+    "included": {
+      "type": "boolean"
+    },
+    "inclusion_reason": {
+      "type": "string",
+      "minLength": 1
+    },
+    "recommendations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/recommendation"
+      }
+    },
+    "threat_model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "framework",
+        "assets",
+        "input_channels",
+        "failure_modes"
+      ],
+      "properties": {
+        "framework": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/element"
+            }
+          ],
+          "description": "Named framework (e.g. lethal trifecta, OWASP, STRIDE) with quote, or null"
+        },
+        "assets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/element"
+          }
+        },
+        "input_channels": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/element"
+          }
+        },
+        "failure_modes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/failure_mode"
+          }
+        }
+      }
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "$defs": {
+    "element": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "quote"
+      ],
+      "properties": {
+        "value": {
+          "type": "string",
+          "minLength": 1
+        },
+        "quote": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Verbatim copy from clean.md"
+        },
+        "location": {
+          "type": "string"
+        }
+      }
+    },
+    "failure_mode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "threat",
+        "quote"
+      ],
+      "properties": {
+        "value": {
+          "type": "string",
+          "minLength": 1
+        },
+        "threat": {
+          "$ref": "#/$defs/threat_tag"
+        },
+        "quote": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Verbatim copy from clean.md"
+        },
+        "location": {
+          "type": "string"
+        }
+      }
+    },
+    "recommendation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "practice",
+        "stance",
+        "summary",
+        "threats",
+        "rqs",
+        "evidence_type",
+        "tradeoffs",
+        "bypasses_limits",
+        "quote",
+        "location"
+      ],
+      "properties": {
+        "practice": {
+          "$ref": "#/$defs/practice_tag"
+        },
+        "stance": {
+          "enum": [
+            "recommends",
+            "rejects",
+            "evaluates"
+          ]
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "threats": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/threat_tag"
+          }
+        },
+        "rqs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "enum": [
+              "RQ1",
+              "RQ2",
+              "RQ3",
+              "RQ4",
+              "RQ5",
+              "RQ6",
+              "RQ7"
+            ]
+          }
+        },
+        "evidence_type": {
+          "$ref": "#/$defs/evidence_type"
+        },
+        "tradeoffs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "bypasses_limits": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "quote": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Verbatim copy from clean.md"
+        },
+        "location": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Section heading, page, or paragraph locator"
+        }
+      }
+    },
+    "practice_tag": {
+      "anyOf": [
+        {
+          "enum": [
+            "audit-logging-monitoring",
+            "auto-approval-classifier",
+            "capability-policy-enforcement",
+            "code-review-integrity",
+            "container",
+            "credential-proxy",
+            "data-governance",
+            "destructive-action-guards",
+            "egress-deny-all",
+            "egress-domain-allowlist",
+            "egress-proxy-inspection",
+            "filesystem-scoping",
+            "gvisor-userspace-kernel",
+            "harness-outside-sandbox",
+            "harness-permissions",
+            "human-in-the-loop",
+            "information-flow-control",
+            "lethal-trifecta-avoidance",
+            "mcp-tool-vetting",
+            "microvm-vm",
+            "multi-agent-trust-boundaries",
+            "no-secrets-in-env",
+            "os-sandbox",
+            "patching-updates",
+            "pi-architectural-isolation",
+            "pi-classifier-detection",
+            "pi-prompt-hardening",
+            "red-teaming-evaluation",
+            "remote-ephemeral-env",
+            "resource-limits",
+            "scoped-short-lived-tokens",
+            "secret-scanning",
+            "supply-chain-controls",
+            "untrusted-repo-config-handling"
+          ]
+        },
+        {
+          "type": "string",
+          "pattern": "^other:\\S.*$"
+        }
+      ],
+      "description": "From vocabulary.yaml practice_tags or 'other:<text>'"
+    },
+    "threat_tag": {
+      "anyOf": [
+        {
+          "enum": [
+            "code-integrity",
+            "data-exfiltration",
+            "destructive-action",
+            "egress-bypass",
+            "host-delayed-execution",
+            "misaligned-agent-behavior",
+            "multi-agent-compromise",
+            "permission-bypass",
+            "privilege-escalation",
+            "prompt-injection-direct",
+            "prompt-injection-indirect",
+            "rce-via-agent",
+            "resource-abuse",
+            "sandbox-escape",
+            "secret-exfiltration",
+            "supply-chain-compromise"
+          ]
+        },
+        {
+          "type": "string",
+          "pattern": "^other:\\S.*$"
+        }
+      ],
+      "description": "From vocabulary.yaml threat_tags or 'other:<text>'"
+    },
+    "evidence_type": {
+      "anyOf": [
+        {
+          "enum": [
+            "citation",
+            "community-anecdote",
+            "design-rationale",
+            "empirical-evaluation",
+            "expert-opinion",
+            "exploit-demonstration",
+            "formal-argument",
+            "incident-report",
+            "vendor-claim"
+          ]
+        },
+        {
+          "type": "string",
+          "pattern": "^other:\\S.*$"
+        }
+      ],
+      "description": "From vocabulary.yaml evidence_types or 'other:<text>'"
+    },
+    "author_role": {
+      "anyOf": [
+        {
+          "enum": [
+            "academic",
+            "community",
+            "independent-practitioner",
+            "industry-research",
+            "security-firm",
+            "standards-body",
+            "vendor"
+          ]
+        },
+        {
+          "type": "string",
+          "pattern": "^other:\\S.*$"
+        }
+      ],
+      "description": "From vocabulary.yaml author_roles or 'other:<text>'"
+    }
+  }
+}

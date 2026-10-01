@@ -1,0 +1,45 @@
+id: P-999
+title: Fake Source
+author_org: Test Org
+date: "2026-01-01"
+stream: Practitioner Sources
+sub_stream: Engineering Blogs
+author_role: independent-practitioner
+incentives: None stated.
+harness: [Claude Code]
+extracted_by: test-fixture
+included: true
+inclusion_reason: Gives concrete isolation recommendations for coding agents.
+recommendations:
+  - practice: microvm-vm
+    stance: recommends
+    summary: Run the agent in a VM rather than relying on a shared kernel.
+    threats: [sandbox-escape, rce-via-agent]
+    rqs: [RQ2]
+    evidence_type: expert-opinion
+    tradeoffs: []
+    bypasses_limits: []
+    quote: 'a shared kernel "is not a security boundary" for untrusted code - at least not today.'
+    location: "Fake Source, paragraph 1"
+  - practice: egress-deny-all
+    stance: recommends
+    summary: Deny egress by default.
+    threats: [secret-exfiltration]
+    rqs: [RQ4]
+    evidence_type: other:assertion
+    tradeoffs: []
+    bypasses_limits: [DNS tunneling bypasses per-domain allowlists.]
+    quote: "The firewall must deny all egress by default; per-domain allowlists can be bypassed"
+    location: paragraph 2
+threat_model:
+  framework: null
+  assets: []
+  input_channels:
+    - value: README files and issue comments
+      quote: "hide instructions in README files ... issue comments"
+      location: paragraph 3
+  failure_modes:
+    - value: Egress allowlist bypass
+      threat: egress-bypass
+      quote: "can be bypassed via DNS tunneling"
+notes: ""

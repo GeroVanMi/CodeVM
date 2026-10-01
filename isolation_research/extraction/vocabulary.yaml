@@ -1,0 +1,83 @@
+# Seed controlled vocabulary for Step 3 extraction records.
+# Values outside these lists are written as "other:<short-text>".
+# Revise after the pilot (see extraction/README.md).
+version: 0.1
+
+practice_tags:
+  # RQ2 - isolation boundary
+  harness-permissions: Native harness permission/approval system (allow/deny rules, approval prompts, modes).
+  auto-approval-classifier: Model-based auto-approval of tool calls (e.g. "auto mode").
+  os-sandbox: OS-level process sandbox on a shared kernel (Seatbelt, bubblewrap, Landlock, seccomp).
+  container: Container isolation (Docker, Podman, devcontainer) on a shared kernel.
+  gvisor-userspace-kernel: User-space kernel or syscall interposition (gVisor and similar).
+  microvm-vm: Hardware-virtualized boundary (Firecracker, Lima/QEMU VM, microVM).
+  remote-ephemeral-env: Agent runs on a remote or disposable machine/cloud sandbox.
+  harness-outside-sandbox: Harness/credentials kept outside the sandbox, only tool execution inside.
+  filesystem-scoping: Restrict readable/writable paths (workdir-only, read-only mounts, no host mounts).
+  # RQ3 - secrets
+  no-secrets-in-env: Keep credentials out of the agent's environment and filesystem.
+  credential-proxy: Inject credentials outside the agent (egress proxy, broker, sealed secrets).
+  scoped-short-lived-tokens: Least-privilege, short-lived, or per-task credentials.
+  secret-scanning: Detect/redact secrets in inputs, outputs, or commits.
+  # RQ4 - egress
+  egress-deny-all: Block all outbound network access.
+  egress-domain-allowlist: Allow egress only to listed domains/hosts.
+  egress-proxy-inspection: Route egress via a proxy that inspects or filters requests.
+  # RQ5 - prompt injection
+  pi-classifier-detection: Classifier or detector for prompt injection in inputs.
+  pi-prompt-hardening: Prompt-level defenses (spotlighting, delimiters, instructions, rules files).
+  pi-architectural-isolation: Design patterns separating trusted control from untrusted data (dual LLM, CaMeL, plan-then-execute).
+  information-flow-control: Taint/label tracking and policy on data flows.
+  capability-policy-enforcement: Programmatic privilege/capability policies on tool calls.
+  lethal-trifecta-avoidance: Avoid combining private data, untrusted content, and exfiltration ability (rule of two).
+  human-in-the-loop: Human review/approval of actions, diffs, or plans.
+  # RQ6 - secondary risks
+  untrusted-repo-config-handling: Distrust repo-supplied config (hooks, MCP, .envrc, IDE tasks, rules files).
+  supply-chain-controls: Pin/verify dependencies, packages, MCP servers, skills, extensions.
+  mcp-tool-vetting: Review, pin, or restrict MCP servers and tools.
+  destructive-action-guards: Prevent or make reversible destructive actions (snapshots, backups, deny rm/force-push).
+  code-review-integrity: Review agent-written code/commits before merge or host execution.
+  resource-limits: CPU/memory/time/cost limits.
+  audit-logging-monitoring: Log, monitor, or alert on agent actions.
+  multi-agent-trust-boundaries: Isolation and trust rules between cooperating agents.
+  data-governance: Controls on what data the agent and vendor may see or retain.
+  red-teaming-evaluation: Adversarial testing/benchmarking of the agent setup.
+  patching-updates: Keep harness/sandbox updated; vendor fixes.
+
+threat_tags:
+  prompt-injection-indirect: Malicious instructions in content the agent reads (repos, issues, web, docs, tool output).
+  prompt-injection-direct: Malicious instructions supplied by the user/operator channel.
+  rce-via-agent: Injection or misuse leading to arbitrary code execution.
+  secret-exfiltration: Credentials or API keys leaked off the machine.
+  data-exfiltration: Non-secret private data leaked.
+  sandbox-escape: Breaking out of the isolation boundary (kernel, container, VM, sandbox bugs).
+  egress-bypass: Circumventing network controls (DNS, domain fronting, allowed sockets, allowed domains).
+  permission-bypass: Circumventing harness permissions/approval (parsing bugs, allowlisted tools).
+  host-delayed-execution: Agent-written files executed later on the host (git hooks, .envrc, IDE tasks, CI).
+  supply-chain-compromise: Malicious packages, MCP servers, skills, or extensions.
+  destructive-action: Deletion or damage to files, repos, infrastructure.
+  code-integrity: Backdoors or vulnerabilities inserted into produced code.
+  resource-abuse: Crypto-mining, DoS, runaway cost.
+  privilege-escalation: Gaining more rights than granted (in-sandbox or via tools).
+  multi-agent-compromise: One agent compromising another.
+  misaligned-agent-behavior: Agent itself acting harmfully without external attacker.
+
+evidence_types:
+  empirical-evaluation: Measured results (benchmark, experiment, red-team statistics).
+  exploit-demonstration: Concrete working attack or PoC against a real system.
+  incident-report: Real-world incident or disclosed CVE.
+  formal-argument: Proof or formal/security-design argument.
+  design-rationale: Reasoned argument without measurement.
+  vendor-claim: Product/documentation statement by the vendor about its own system.
+  expert-opinion: Practitioner/expert recommendation without stated evidence.
+  community-anecdote: Personal or forum experience report.
+  citation: Relies on another source's evidence.
+
+author_roles:
+  vendor: Builds the harness or sandbox discussed.
+  security-firm: Sells security services/products.
+  independent-practitioner: Individual developer/blogger.
+  academic: University or research lab.
+  industry-research: Corporate research group.
+  standards-body: Government agency or standards org.
+  community: Forum/discussion participants.
