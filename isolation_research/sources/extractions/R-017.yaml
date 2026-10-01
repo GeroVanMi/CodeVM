@@ -1,0 +1,404 @@
+id: R-017
+extracted_by: claude-opus-5-5
+extracted_at: "2026-10-01T21:34:47Z"
+title: "A Systematic Survey of Security Threats and Defenses in LLM-Based AI Agents: A Layered Attack Surface Framework"
+author_org: "Kexin Chu (School of Computing, University of Connecticut)"
+date: "2026-04-25"
+stream: Researcher Sources
+sub_stream: ""
+author_role: academic
+incentives: "Single-author academic SoK; declares no competing interests. Promotes the author's own frameworks (LASM layer model, T1-T4 temporality axis, ABOM specification, action-log schema), which shapes recommendations toward layer-specific defense-in-depth and the proposed artifacts."
+harness: [Claude Code, GitHub Copilot, Cursor]
+included: true
+inclusion_reason: "Systematic survey of threats and defenses for tool-using LLM agents (indirect prompt injection, tool sandboxing, least privilege, MCP/skill supply chain, multi-agent trust, logging), with defense recipes. It cites a prompt-injection RCE study of coding agents (Claude Code, Copilot, Cursor). It is not specific to coding agents, but the findings carry over to them."
+recommendations:
+  - practice: information-flow-control
+    stance: recommends
+    summary: "Trust-mark/label tool returns as least-trusted input. The paper calls the missing labels ('principal trust inversion') the single root cause of all surveyed L4 (tool execution) attacks. L4 defenses without trust labels address symptoms only."
+    threats: [prompt-injection-indirect, rce-via-agent]
+    rqs: [RQ1, RQ5]
+    evidence_type: design-rationale
+    tradeoffs: []
+    bypasses_limits:
+      - "The source notes trust-marking on tool returns has no widely deployed implementation."
+    quote: "tool outputs are incorporated into ... the agent’s planning context without trust marking, even though the environment is the ... least-trusted principal in the hierarchy. The corollary: any L4 defense that does not enforce a ... trust label on tool returns addresses symptoms, not the cause."
+    location: "Section 3.4, Empirical Finding 2: Root-Cause Uniformity at L4"
+  - practice: pi-architectural-isolation
+    stance: recommends
+    summary: "Separate instructions from external data through specialized input channels (StruQ). This is part of the defense recipe for indirect prompt injection."
+    threats: [prompt-injection-indirect]
+    rqs: [RQ5]
+    evidence_type: citation
+    tradeoffs: []
+    bypasses_limits:
+      - "Residual risk named in the recipe: GCG-style low-perplexity payloads and T3 variants persisted into memory."
+    quote: "Structural defenses such as StruQ [118] enforce separation between ... prompt instructions and external data via specialized input channels, reducing injection success"
+    location: "Section 3.4.4 L4 Defenses; Table 8"
+  - practice: pi-classifier-detection
+    stance: evaluates
+    summary: "Input sanitization and output filtering on tool responses are the most widely deployed defenses and are included in the recipes. They cannot detect semantically encoded content or T3/T4 threats."
+    threats: [prompt-injection-indirect]
+    rqs: [RQ5, RQ7]
+    evidence_type: design-rationale
+    tradeoffs:
+      - "Table 7: high false-positive rate."
+    bypasses_limits:
+      - "Adaptive adversary evades known patterns (Table 7)."
+      - "Semantic attacks pass; an oblivious adversary is assumed."
+      - "Does not address cross-session (T3) or drift/dormant (T4) threats."
+    quote: "Input sanitization at the user–agent boundary and output filtering applied to tool responses ... constitute the most widely deployed defenses. Despite their prevalence, they have well-documented ... limitations: (a) they operate on text/token content and cannot detect semantically encoded"
+    location: "Section 5.1.1 Input Sanitization and Output Filtering; Table 7"
+  - practice: pi-classifier-detection
+    stance: rejects
+    summary: "Runtime classifiers such as Llama Guard and perplexity filters are insufficient on their own. They fail against semantically coherent and low-perplexity attacks, and they only watch the user-input boundary, not tool outputs."
+    threats: [prompt-injection-direct, prompt-injection-indirect]
+    rqs: [RQ5]
+    evidence_type: citation
+    tradeoffs: []
+    bypasses_limits:
+      - "AutoDAN/PAIR semantically coherent jailbreaks and GCG low-perplexity suffixes evade filters."
+      - "Adversarial content via tool outputs arrives after the user-input boundary has been cleared."
+    quote: "safeguards such as Llama Guard [78], perplexity thresholds, and content classifiers [79, 80] ... catch syntactically anomalous jailbreaks but, by construction, fail against semantically coherent"
+    location: "Section 3.1.4 L1 Defenses"
+  - practice: capability-policy-enforcement
+    stance: recommends
+    summary: "Least privilege: agents hold only the minimum permissions for the current task, and permissions are revoked or scoped down after it (the 'minimal footprint principle')."
+    threats: [privilege-escalation, prompt-injection-indirect]
+    rqs: [RQ2, RQ5]
+    evidence_type: design-rationale
+    tradeoffs: []
+    bypasses_limits: []
+    quote: "The principle of least privilege [116, 117] is the foundational design guideline: agents should hold ... only the minimum permissions required for the current task, with permissions revoked or scoped"
+    location: "Section 3.4.4 L4 Defenses; Section 5.1.3"
+  - practice: capability-policy-enforcement
+    stance: rejects
+    summary: "Per-call permission checks cannot catch 'semantic privilege escalation': a chain of individually authorized tool calls whose combined effect exceeds the intended scope. This bears on whether per-call harness permission systems are a sufficient boundary."
+    threats: [privilege-escalation, permission-bypass]
+    rqs: [RQ2, RQ7]
+    evidence_type: formal-argument
+    tradeoffs: []
+    bypasses_limits:
+      - "Escalation emerges from composing authorized actions; no software vulnerability is exploited."
+    quote: "of those authorized actions, and it is invisible to capability-based access control systems that ... evaluate permissions per-call rather than across call sequences."
+    location: "Section 3.4.2 Capability Creep and Privilege Escalation"
+  - practice: capability-policy-enforcement
+    stance: recommends
+    summary: "Invariant monitoring: pre-specified behavioral constraints that abort plan execution when violated."
+    threats: [prompt-injection-indirect, data-exfiltration]
+    rqs: [RQ5]
+    evidence_type: design-rationale
+    tradeoffs:
+      - "Table 7 (memory invariants): specification burden."
+    bypasses_limits:
+      - "Unanticipated drift evades invariants (Table 7)."
+    quote: "Invariant monitoring pre-specifies behavioral constraints (e.g., “never ... send emails to addresses not in the initial user’s contact list”) and aborts plan execution on ... violation."
+    location: "Section 3.4.4 L4 Defenses"
+  - practice: other:tool-sandboxing-unspecified
+    stance: recommends
+    summary: "Run tool execution in restricted, isolated environments to limit blast radius. The paper names no specific isolation technology (no container vs. VM discussion). Table 15 says only L4 sandboxing contains a project-file RCE once a malicious file is present."
+    threats: [rce-via-agent, prompt-injection-indirect, supply-chain-compromise]
+    rqs: [RQ2]
+    evidence_type: design-rationale
+    tradeoffs: []
+    bypasses_limits:
+      - "Table 7: tool sandboxing provides no semantic injection prevention."
+    quote: "Tool sandboxing isolates tool execution ... in restricted environments [120]."
+    location: "Section 3.4.4 L4 Defenses; Table 7; Table 15"
+  - practice: other:egress-restriction-unspecified
+    stance: recommends
+    summary: "Run tool calls in isolated environments with restricted outbound connectivity. No allowlist/deny-all specifics are given. The paper cites a finding that 33% of MCP servers allow unrestricted outbound access."
+    threats: [data-exfiltration, secret-exfiltration]
+    rqs: [RQ4]
+    evidence_type: design-rationale
+    tradeoffs: []
+    bypasses_limits: []
+    quote: "Executing tool calls in isolated environments with restricted outbound connectivity prevents ... secondary exploitation via tool outputs."
+    location: "Section 5.1.3 Tool Sandboxing and Least Privilege (L4, L6)"
+  - practice: human-in-the-loop
+    stance: recommends
+    summary: "Require human approval/review for high-impact, irreversible actions. This appears in the minimal defense-in-depth stack and in several recipes."
+    threats: [destructive-action, prompt-injection-indirect, misaligned-agent-behavior]
+    rqs: [RQ5, RQ6]
+    evidence_type: design-rationale
+    tradeoffs:
+      - "Scalability limit; review quality degrades at volume (Table 7)."
+      - "Cells that rely only on human-in-the-loop (e.g., L4 x T3) have high false-positive cost and scale poorly."
+    bypasses_limits: []
+    quote: "Action confirmation requires human approval for high-impact, ... low-reversibility actions."
+    location: "Section 3.4.4 L4 Defenses; Section 5.1.6; Table 7"
+  - practice: other:defense-in-depth
+    stance: recommends
+    summary: "No single-layer defense suffices. A non-transferability theorem argues that a defense at one layer has zero detection power against attacks localized at another, so controls are needed at every layer."
+    threats: [prompt-injection-indirect, supply-chain-compromise, multi-agent-compromise]
+    rqs: [RQ1, RQ7]
+    evidence_type: formal-argument
+    tradeoffs: []
+    bypasses_limits:
+      - "Seven of 28 layer x temporality cells have zero published defense coverage."
+    quote: "No single-layer defense is sufficient. Effective agentic security requires defense-in-depth: multiple ... independent controls at different layers, each covering the failure modes of the others."
+    location: "Section 5.1.6; Proposition 1 / Theorem 1 (Appendix C)"
+  - practice: audit-logging-monitoring
+    stance: recommends
+    summary: "Comprehensive action logging, using a proposed signed, append-only action-log schema with trust labels on consumed tool outputs, for trajectory attribution and cross-session correlation."
+    threats: [misaligned-agent-behavior, supply-chain-compromise, data-exfiltration]
+    rqs: [RQ6]
+    evidence_type: design-rationale
+    tradeoffs: []
+    bypasses_limits:
+      - "The schema is a proposal and has not been validated (Table 13)."
+      - "A cited study finds that all evaluated frameworks lose at least 30% of causal audit evidence under normal operation."
+    quote: "5. L7: Comprehensive action logging + mandatory human review for irreversible actions"
+    location: "Section 5.1.6; Section 4.3.4; Appendix F"
+  - practice: audit-logging-monitoring
+    stance: evaluates
+    summary: "Longitudinal behavioral monitoring can detect within-session and cross-session drift but is blind to dormant weight-level backdoors. Current frameworks lack the needed cross-session baselines."
+    threats: [misaligned-agent-behavior, supply-chain-compromise]
+    rqs: [RQ6]
+    evidence_type: design-rationale
+    tradeoffs:
+      - "Requires cross-session logs and deployment-specific baselines (Table 7)."
+    bypasses_limits:
+      - "T4b dormant backdoors produce no anomaly until triggered."
+    quote: "T4b threats (dormant backdoors embedded in model ... weights) are not detectable by this approach: the payload produces no behavioral anomaly until"
+    location: "Section 5.1.5 Behavioral Monitoring and Anomaly Detection"
+  - practice: destructive-action-guards
+    stance: recommends
+    summary: "Without system-level accountability frameworks, high-stakes deployment is defensible only if agents are restricted to fully reversible actions."
+    threats: [destructive-action]
+    rqs: [RQ6]
+    evidence_type: citation
+    tradeoffs: []
+    bypasses_limits: []
+    quote: "Without it, high-stakes deployment ... is defensible only by restricting agents to fully reversible actions [89]."
+    location: "Section 6.1, Table 10 (Gap 5)"
+  - practice: mcp-tool-vetting
+    stance: recommends
+    summary: "Authenticate MCP servers with signed manifests and code review, and verify manifest hashes before context initialization, as tool poisoning runs before the first user message."
+    threats: [supply-chain-compromise, prompt-injection-indirect, data-exfiltration]
+    rqs: [RQ6]
+    evidence_type: design-rationale
+    tradeoffs:
+      - "Requires ecosystem-wide adoption."
+    bypasses_limits:
+      - "Signed-but-compromised vendor; dynamic tool-description updates (Table 8 residual risk)."
+      - "No tool-behavior audit (Table 7)."
+    quote: "MCP server authentication (signed manifests, code review requirements) reduces tool poisoning ... risk but requires ecosystem-wide adoption."
+    location: "Section 4.2.4 L6 Defenses; Table 8"
+  - practice: supply-chain-controls
+    stance: recommends
+    summary: "Proposes an Agent Bill of Materials (ABOM) that extends SBOM with model weights/attestations, system-prompt hashes, and MCP server hashes, permissions, and manifest signatures."
+    threats: [supply-chain-compromise]
+    rqs: [RQ6]
+    evidence_type: design-rationale
+    tradeoffs:
+      - "For closed models, depends on provider attestation rather than direct weight-hash verification."
+    bypasses_limits:
+      - "Not a ratified standard; no tooling (Gap 4)."
+    quote: "ABOM is the minimal extension, without which MCP-class attacks like Postmark ... are structurally undetectable."
+    location: "Section 4.2.3 The Agent Bill of Materials; Take-away 9.1"
+  - practice: supply-chain-controls
+    stance: rejects
+    summary: "Classical supply-chain tooling (SBOM, package signing, vulnerability databases) is incomplete for agents. Skill-registry poisoning has semantic effects that dependency-hash checks cannot see."
+    threats: [supply-chain-compromise]
+    rqs: [RQ6, RQ7]
+    evidence_type: design-rationale
+    tradeoffs: []
+    bypasses_limits:
+      - "Skill poisoning with semantic side effects is invisible to dependency-hash verification."
+      - "Package signing does not contain execution once a malicious file is present (Table 15)."
+    quote: "this section argues that the existing supply-chain toolkit (SBOM, package signing, vulnerability ... databases) is structurally incomplete"
+    location: "Section 4.2 L6: Ecosystem Layer Attacks"
+  - practice: scoped-short-lived-tokens
+    stance: evaluates
+    summary: "Cites protocol-level MCP fixes: authenticated tool-manifest exchange and capability-scoped invocation tokens."
+    threats: [supply-chain-compromise, secret-exfiltration]
+    rqs: [RQ3, RQ6]
+    evidence_type: citation
+    tradeoffs: []
+    bypasses_limits: []
+    quote: "capability-scoped invocation tokens as protocol-level fixes."
+    location: "Section 4.2.1 MCP Security"
+  - practice: multi-agent-trust-boundaries
+    stance: rejects
+    summary: "Cryptographic signing of inter-agent messages prevents impersonation but not relay of payloads by a genuinely compromised agent. It is insufficient on its own."
+    threats: [multi-agent-compromise]
+    rqs: [RQ6]
+    evidence_type: citation
+    tradeoffs: []
+    bypasses_limits:
+      - "Compromised signer messages pass undetected (Table 7)."
+    quote: "Cryptographic channel authentication is therefore not sufficient on its own."
+    location: "Section 4.1.1 Trust Chain Attacks and Infectious Jailbreak"
+  - practice: multi-agent-trust-boundaries
+    stance: recommends
+    summary: "Use heterogeneous model families across agents, message signing, behavioral correlation monitoring, and channel sandboxing to limit infectious-jailbreak propagation."
+    threats: [multi-agent-compromise]
+    rqs: [RQ6]
+    evidence_type: design-rationale
+    tradeoffs: []
+    bypasses_limits:
+      - "Steganographic collusion and compromise through shared memory remain (Table 8 residual risk)."
+      - "The paper argues an information-theoretic lower bound on detecting novel steganographic encodings."
+    quote: "deliberately use heterogeneous model families as different agents reduce the success of jailbreak ... propagation (a payload effective against one model family may not transfer to others)."
+    location: "Section 4.1.4 L5 Defenses; Table 8"
+  - practice: other:memory-integrity-controls
+    stance: recommends
+    summary: "Memory write-access control, write-time provenance, and consensus validation (A-MemGuard) against cross-session memory poisoning."
+    threats: [prompt-injection-indirect, other:cross-session-memory-poisoning]
+    rqs: [RQ5, RQ6]
+    evidence_type: citation
+    tradeoffs:
+      - "About 15% throughput overhead; requires a majority of honest sources."
+    bypasses_limits:
+      - "Multi-source agreement on a malicious entry; T4a drift (Table 8)."
+    quote: "Lin et al. [99] propose A-MemGuard, a consensus-based memory validation framework requiring ... multi-source agreement before committing memory updates, achieving >95% attack mitigation ... at ∼15% throughput overhead."
+    location: "Section 3.3.4 Memory Defenses"
+  - practice: data-governance
+    stance: recommends
+    summary: "Namespace memory and restrict reads so that private data captured in agent memory does not leak across users."
+    threats: [data-exfiltration]
+    rqs: [RQ6]
+    evidence_type: design-rationale
+    tradeoffs:
+      - "Per-principal key management overhead (Table 7)."
+    bypasses_limits: []
+    quote: "write to persistent memory), read-access restrictions (memory namespacing prevents cross-user"
+    location: "Section 5.1.2 Memory Integrity Controls (L3)"
+  - practice: red-teaming-evaluation
+    stance: recommends
+    summary: "Evaluate defenses against adaptive adversaries, report false-positive rates, use multi-session protocols for cross-session threats, and test heterogeneous multi-agent setups."
+    threats: [prompt-injection-indirect, multi-agent-compromise]
+    rqs: [RQ5, RQ7]
+    evidence_type: design-rationale
+    tradeoffs: []
+    bypasses_limits:
+      - "None of the 10 surveyed agent-security benchmarks evaluates cross-session (T3) or drift/dormant (T4) threats."
+    quote: "1. Report results under both oblivious and adaptive adversary settings."
+    location: "Section 5.3.3 Evaluation Recommendations"
+  - practice: red-teaming-evaluation
+    stance: rejects
+    summary: "Pre-deployment red-teaming cannot detect sleeper-agent / dormant-trigger behavior. The burden shifts to continuous runtime monitoring."
+    threats: [supply-chain-compromise, misaligned-agent-behavior]
+    rqs: [RQ6, RQ7]
+    evidence_type: citation
+    tradeoffs: []
+    bypasses_limits: []
+    quote: "Applied to agents, sleeper agents create a class of L1 attacks that are systematically invisible"
+    location: "Section 3.2.4 Deceptive Alignment and Sleeper Agents"
+  - practice: other:runtime-attestation-tee
+    stance: recommends
+    summary: "Future direction: a trusted execution environment that attests agent actions were sanctioned by a verified principal hierarchy."
+    threats: [misaligned-agent-behavior]
+    rqs: [RQ6]
+    evidence_type: design-rationale
+    tradeoffs:
+      - "Adapting TEEs to the LLM inference stack is a significant engineering challenge."
+    bypasses_limits: []
+    quote: "A trusted execution environment for agent actions, providing cryptographic attestation that"
+    location: "Section 6.2.2 Runtime Behavioral Attestation"
+  - practice: other:regulatory-mandates
+    stance: recommends
+    summary: "Argues that the governance gaps (action logging, human-in-the-loop thresholds, MCP certification) form a negative externality and need regulatory intervention. Current EU AI Act and NIST AI RMF provisions do not cover them."
+    threats: [supply-chain-compromise, misaligned-agent-behavior]
+    rqs: [RQ7]
+    evidence_type: design-rationale
+    tradeoffs:
+      - "Operators bear the implementation cost while the harm falls on third parties."
+    bypasses_limits: []
+    quote: "precisely the kind that has historically required regulatory intervention to resolve."
+    location: "Section 4.3.4 Regulatory Landscape and Governance Gaps"
+threat_model:
+  framework:
+    value: "LASM (Layered Attack Surface Model, 7 layers) x attack temporality T1-T4; four-dimensional adversary model (position, knowledge, goal, persistence); mapped against OWASP LLM Top 10 and MITRE ATLAS"
+    quote: "Model (LASM), a seven-layer decomposition of the agentic stack: Foundation, Cognitive,"
+    location: "Abstract; Section 2.2.3; Section 2.3; Appendix E"
+  assets:
+    - value: "Privileged tool capabilities (browsers, code interpreters, file systems, payment APIs)"
+      quote: "browsers, code interpreters, file systems and payment APIs"
+      location: "Section 1 Introduction"
+    - value: "Persistent long-term agent memory"
+      quote: "the most security-critical component, persists indefinitely, storing episodic experiences, learned"
+      location: "Section 3.3.1"
+    - value: "Private user data in agent memory"
+      quote: "agent memory inadvertently captures private user data and exposes it to unauthorized principals"
+      location: "Section 3.3.1 Privacy and drift surfaces"
+    - value: "OAuth tokens / credentials handled by MCP servers"
+      quote: "43% contain OAuth authentication flaws enabling unauthorized token reuse."
+      location: "Section 4.2.1 MCP Security"
+  input_channels:
+    - value: "Web pages, email, documents, API responses, database records"
+      quote: "somewhere in the agent’s information environment: a web page, email, document, API response,"
+      location: "Section 3.4.1 Indirect Prompt Injection"
+    - value: "Repository project files, dependency documentation, repository metadata (coding agents)"
+      quote: "project files, including dependency documentation and repository metadata, causes the agent to"
+      location: "Section 3.4.1"
+    - value: "MCP tool descriptions loaded at context initialization"
+      quote: "that are processed by the agent during context initialization, before any user interaction."
+      location: "Section 4.2.1"
+    - value: "RAG knowledge base / retrieved memory"
+      quote: "documents planted in the knowledge base and retrieved without user interaction."
+      location: "Section 3.3.2 RAG Poisoning"
+    - value: "Peer / sub-agent messages"
+      quote: "privilege sub-agent and using its trusted position to inject malicious instructions upward or"
+      location: "Section 4.1.1"
+    - value: "Shared skill/plugin registries"
+      quote: "a shared skill/plugin registry can propagate to all downstream agent deployments that auto-install"
+      location: "Section 4.2.2"
+  failure_modes:
+    - value: "Prompt injection against production coding agents succeeds 50-80% of the time"
+      threat: prompt-injection-indirect
+      quote: "and Cursor, finding attack success rates of 50–80% across model families. They document"
+      location: "Section 3.4.1"
+    - value: "Attacker content in project files makes GitHub Copilot run arbitrary shell commands"
+      threat: rce-via-agent
+      quote: "execute arbitrary shell commands during routine coding tasks."
+      location: "Section 3.4.1"
+    - value: "Malicious MCP server (Postmark) exfiltrates email via an injected BCC field"
+      threat: data-exfiltration
+      quote: "into email tool calls, silently exfiltrating outgoing email content to an attacker-controlled address"
+      location: "Section 4.2.1"
+    - value: "Malicious MCP servers/skills in public registries exfiltrate credentials and execute remote code"
+      threat: secret-exfiltration
+      quote: "wild, identifying 47 servers on public registries that exfiltrate credentials, execute remote code, or"
+      location: "Section 4.2.1"
+    - value: "Skill-registry poisoning propagates to auto-installing deployments"
+      threat: supply-chain-compromise
+      quote: "Ecosystem-wide skill poisoning: Qu et al. [30] demonstrate that a single malicious entry in"
+      location: "Section 4.2.2"
+    - value: "Poisoned code repositories lead coding assistants to suggest vulnerable code (TrojanPuzzle)"
+      threat: code-integrity
+      quote: "TrojanPuzzle [152] escalates this threat: adversarial suggestions are embedded in code repositories"
+      location: "Section 4.2.2"
+    - value: "Semantic privilege escalation through chains of individually authorized tool calls"
+      threat: privilege-escalation
+      quote: "initial minimal privilege to escalate to full system access through a chain of semantically valid"
+      location: "Section 3.4.2"
+    - value: "Jailbroken agent executes code, exfiltrates files, calls external APIs"
+      threat: prompt-injection-direct
+      quote: "then execute arbitrary code, exfiltrate files, or call external APIs without restriction."
+      location: "Section 3.1.1 Jailbreaking"
+    - value: "Infectious jailbreak propagates across peer agents"
+      threat: multi-agent-compromise
+      quote: "Niu et al. [12] demonstrate this propagation empirically: a single adversarial image injected into one visual"
+      location: "Section 4.1.1"
+    - value: "Injected content written to long-term memory and acted on in a later session"
+      threat: other:cross-session-memory-poisoning
+      quote: "2. Phase 2 (T3 exploitation): In a future session, the agent retrieves the poisoned memory entry"
+      location: "Section 3.3.3 Temporal Escalation"
+    - value: "Agentic insider threat: alignment failure with no external attacker"
+      threat: misaligned-agent-behavior
+      quote: "adversary at all: alignment failure, where an agent acts contrary to human intent because of"
+      location: "Section 4.3.1"
+notes: |
+  Metadata: author and affiliation confirmed (Kexin Chu, University of Connecticut). The text shows arXiv:2604.23338v2 dated 6 May 2026; the csv date 2026-04-25 is presumably v1 and is plausible.
+  Scope: general survey of LLM agents, not specific to coding agents. Coding-agent content: the Maloyan et al. citation (Claude Code, Copilot, Cursor; 50-80% ASR; Copilot project-file RCE), TrojanPuzzle/dependency poisoning, and skill-ecosystem poisoning.
+  Not covered: shared-kernel vs. VM isolation, per-domain egress allowlists, model API key handling, whether harness permission systems are a security boundary (only the per-call access-control critique), and host-side delayed execution via agent-written files (git hooks, .envrc, IDE tasks).
+  "Tool sandboxing" is recommended generically. The cited reference [120] is ToolEmu, an LM-emulated sandbox for risk identification, not an isolation mechanism.
+  Internal inconsistencies:
+  - Proposition 1 vs. Theorem 1 naming.
+  - Under-studied zone count given as 8 in Appendix B vs. 9 elsewhere.
+  - Defense paper count given as 18 vs. 15.
+  - Table 13 says "headline analysis cutoff April 2025" while elsewhere the corpus is described as unified through April 2026.
+  - Several in-text author names do not match the reference list: [134] Guo vs. Hu; [168] Zhang vs. Khan; [170] Mökander vs. Boddy & Joseph; [172] Garcia vs. Zhang; [132] Chen vs. Zhang; [89] Chen vs. Zhu.
+  PDF-to-text conversion fragmented tables and figures, so quotes were taken from prose lines; " ... " marks line breaks.
+  No prompt-injection payloads aimed at AI agents were observed in the source.

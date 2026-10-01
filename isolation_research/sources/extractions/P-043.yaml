@@ -1,0 +1,121 @@
+id: P-043
+extracted_by: claude-opus-5-5
+extracted_at: "2026-10-01T21:29:56Z"
+title: "The agent harness belongs outside the sandbox"
+author_org: "Andrea Luzzardi, Mendral"
+date: "2026-04-10"
+stream: Practitioner Sources
+sub_stream: Engineering Blogs
+author_role: vendor
+incentives: "Mendral builds and operates a multi-user agent product; the post justifies its own architecture choice and names the infrastructure vendors it uses (Inngest for durable execution, Blaxel for sandboxes with 25ms resume)."
+harness:
+  - Claude Code
+included: true
+inclusion_reason: "Gives a concrete architectural recommendation (harness and credentials outside the sandbox, only tool execution inside) with stated security rationale about credential leakage and sandbox escape; most of the post is about operational/engineering tradeoffs rather than security."
+recommendations:
+  - practice: harness-outside-sandbox
+    stance: recommends
+    summary: "Run the agent loop on the backend and call into a sandbox over an API only for tool execution; the loop never enters the sandbox."
+    threats:
+      - secret-exfiltration
+      - sandbox-escape
+    rqs:
+      - RQ2
+      - RQ3
+    evidence_type: design-rationale
+    tradeoffs:
+      - "Off-the-shelf local harnesses stop working because they assume a local filesystem."
+      - "Durable execution becomes the builder's problem; sessions run for hours and must survive deploys."
+      - "Not running stock Claude Code is a real cost; new harness features lag behind the virtualization layer."
+    bypasses_limits: []
+    quote: "The loop runs on your backend. When it needs to execute a tool, it calls into a sandbox over an API. The sandbox runs the tool and returns the result. The loop never enters the sandbox."
+    location: "Section: The two architectures / Harness outside the sandbox"
+  - practice: no-secrets-in-env
+    stance: recommends
+    summary: "Keep LLM API keys, user tokens and database access in the loop; the sandbox holds only the working environment the agent needs."
+    threats:
+      - secret-exfiltration
+    rqs:
+      - RQ3
+    evidence_type: design-rationale
+    tradeoffs: []
+    bypasses_limits: []
+    quote: "Your credentials stay out of the sandbox. The loop holds the LLM API keys, the user tokens, the database access. The sandbox holds only the environment the agent needs to do its work."
+    location: "Section: Tradeoffs"
+  - practice: harness-permissions
+    stance: rejects
+    summary: "With credentials outside, the sandbox contains nothing worth escaping to, so a permission model inside is presented as unnecessary (permission system not relied on as a boundary)."
+    threats:
+      - secret-exfiltration
+      - permission-bypass
+    rqs:
+      - RQ2
+      - RQ7
+    evidence_type: design-rationale
+    tradeoffs: []
+    bypasses_limits: []
+    quote: "so there's no permission model to enforce and no credential leak to contain"
+    location: "Section: Tradeoffs"
+  - practice: remote-ephemeral-env
+    stance: recommends
+    summary: "Treat sandboxes as disposable cattle: suspend when idle, resume on demand, respawn if one dies mid-session."
+    threats:
+      - resource-abuse
+    rqs:
+      - RQ2
+    evidence_type: design-rationale
+    tradeoffs:
+      - "Cold starts take seconds; they rely on a provider (Blaxel) with 25ms resume from standby."
+      - "State the agent writes to the sandbox filesystem (e.g. memory files) is lost when the sandbox is respawned."
+    bypasses_limits: []
+    quote: "Sandboxes become cattle. If one dies mid-session, the loop provisions a new one and keeps going."
+    location: "Section: Tradeoffs"
+  - practice: multi-agent-trust-boundaries
+    stance: recommends
+    summary: "Store skills and memories in a database scoped to the organization, accessed via virtualized read/write paths, rather than on the sandbox filesystem shared across sessions."
+    threats:
+      - multi-agent-compromise
+    rqs:
+      - RQ6
+    evidence_type: design-rationale
+    tradeoffs:
+      - "Consistency between parallel sessions is unresolved; last-writer-wins per key is expected to break."
+      - "Path prefixes mirroring Claude Code layout may require migration when conventions change."
+    bypasses_limits: []
+    quote: "A write to a memory path is a database transaction, scoped to the organization."
+    location: "Section: The filesystem / One interface, two backends"
+  - practice: "other:bash-command-parsing-guard"
+    stance: evaluates
+    summary: "Bash bypasses the structured-tool virtualization layer; mitigated with a system-prompt instruction and tree-sitter parsing of bash invocations, both described as best-effort and not airtight."
+    threats:
+      - permission-bypass
+    rqs:
+      - RQ5
+      - RQ7
+    evidence_type: design-rationale
+    tradeoffs: []
+    bypasses_limits:
+      - "Bash bypasses the virtualization layer and hits the sandbox's real filesystem."
+      - "Both guards (system prompt and tree-sitter parsing) are best-effort; neither is airtight."
+    quote: "We handle this with two best-effort guards: the system prompt tells the agent not to use bash for virtualized namespaces, and we parse bash invocations with tree-sitter to catch calls that reach into those paths. Neither is airtight."
+    location: "Section: What's still hard"
+threat_model:
+  framework: null
+  assets:
+    - value: "LLM API keys, user tokens, database access held by the harness"
+      quote: "The loop holds the LLM API keys, the user tokens, the database access."
+      location: "Section: Tradeoffs"
+    - value: "Organization-shared skills and memories"
+      quote: "Skills are organizational: everyone on a team shares the same triage playbook. Memories are too."
+      location: "Section: The filesystem"
+  input_channels: []
+  failure_modes:
+    - value: "Agent escapes the sandbox or leaks credentials located inside it (mitigated by keeping nothing of value inside)"
+      threat: secret-exfiltration
+      quote: "so there's no permission model to enforce and no credential leak to contain"
+      location: "Section: Tradeoffs"
+    - value: "Agent uses bash to bypass the structured tool layer"
+      threat: permission-bypass
+      quote: "But the agent also has a bash tool, and nothing stops it from running `grep -r 'foo' /skills/` in a bash session."
+      location: "Section: What's still hard"
+notes: "Security discussion is brief (one paragraph on credentials); most of the post covers durable execution, sandbox lifecycle and filesystem virtualization. No explicit threat model, prompt injection, egress control, or host-side delayed execution discussion. The bash/tree-sitter guard is a functional (not security) control for the virtualization layer, but is a relevant data point on the unreliability of command parsing. Title, author and date do not appear in the text and could not be verified. No prompt-injection payload observed in the source."

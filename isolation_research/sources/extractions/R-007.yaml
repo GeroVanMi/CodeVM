@@ -1,0 +1,224 @@
+id: R-007
+extracted_by: claude-opus-5-5
+extracted_at: "2026-10-01T21:31:38Z"
+title: "Progent: Securing AI Agents with Privilege Control"
+author_org: "Tianneng Shi, Jingxuan He, Zhun Wang, Hongwei Li, Linyu Wu, Wenbo Guo, Dawn Song (UC Berkeley, UC Santa Barbara, National University of Singapore)"
+date: "2025-04-16"
+stream: Researcher Sources
+sub_stream: ""
+author_role: academic
+incentives: "Authors propose and evaluate their own defense framework (Progent, open-source artifact); comparisons against prior defenses are run by the authors, so results may favor their system. No commercial product stated."
+harness: [OpenHands]
+included: true
+inclusion_reason: "Proposes and empirically evaluates deterministic least-privilege policy enforcement on tool calls against indirect prompt injection, compares it with PI classifiers and prompt-level defenses, and integrates it with real agent frameworks including OpenHands; generalizes to tool-using coding agents."
+recommendations:
+  - practice: capability-policy-enforcement
+    stance: recommends
+    summary: "Enforce least privilege by checking every tool call (tool name and arguments) against symbolic allow/forbid rules with a deterministic procedure; calls matching no rule are blocked by default."
+    threats: [prompt-injection-indirect, data-exfiltration, destructive-action]
+    rqs: [RQ5]
+    evidence_type: design-rationale
+    tradeoffs:
+      - "Policies that are too broad fail to block attacks; policies that are too narrow break other tasks, hence the need for task- and context-specific policies."
+    bypasses_limits:
+      - "Cannot defend against attacks that operate within the least privilege needed for the user task (e.g. preference manipulation)."
+      - "Does not handle attacks that only target text outputs."
+      - "Does not apply to multimodal/GUI actions (clicks on screen)."
+    quote: "force the principle of least privilege: allow only tool calls essential"
+    location: "Section 1 Introduction, Our Work: Progent"
+  - practice: capability-policy-enforcement
+    stance: recommends
+    summary: "Progent reduces attack success rate on ASB from 70.3% to 3.9% (and on AgentDojo from 39.9% to 1.0%) while keeping utility close to the undefended baseline, even with auto-approval of all policy expansions (worst case)."
+    threats: [prompt-injection-indirect]
+    rqs: [RQ5]
+    evidence_type: empirical-evaluation
+    tradeoffs:
+      - "Small utility changes; failures occur when attack tool calls look very similar to benign tools related to the task."
+    bypasses_limits:
+      - "Residual ASR when attack tool names/descriptions closely resemble benign, task-relevant tools."
+    quote: "Progent also significantly ... reduces ASR from 70.3% to 3.9%."
+    location: "Section 8.1, ASB"
+  - practice: capability-policy-enforcement
+    stance: recommends
+    summary: "LLM generates the initial policy from the trusted user query and updates it at runtime; an SMT solver classifies each update as narrowing (auto-applied) or expansion (needs approval), guaranteeing monotonic confinement so injected content cannot silently escalate privileges."
+    threats: [prompt-injection-indirect, privilege-escalation]
+    rqs: [RQ5]
+    evidence_type: formal-argument
+    tradeoffs:
+      - "Introducing an LLM for policy construction adds non-determinism, mitigated by the deterministic SMT check."
+    bypasses_limits:
+      - "Guarantee depends on correct approval decisions; users who approve malicious expansions or give ambiguous tasks weaken it."
+    quote: "We call this property Monotonic Confinement: the agent’s action ... space cannot increase without explicit approval."
+    location: "Section 6 Progent's Security Guarantee"
+  - practice: capability-policy-enforcement
+    stance: recommends
+    summary: "Manually specified generic policies (organization, developer, user layers with priority) that persist across tasks; manually defined policies with human insight reduce ASB ASR to 0%."
+    threats: [prompt-injection-indirect, data-exfiltration]
+    rqs: [RQ5, RQ6]
+    evidence_type: empirical-evaluation
+    tradeoffs:
+      - "Requires manual policy authoring effort."
+    bypasses_limits: []
+    quote: "These manually defined policies can provably reduce the"
+    location: "Section 8.1, ASB; Section 7 Generic Policies"
+  - practice: capability-policy-enforcement
+    stance: rejects
+    summary: "Coarse-grained tool filtering (LLM selects allowed tools before execution, ignoring arguments) yields worse utility and higher ASR than argument-level policies."
+    threats: [prompt-injection-indirect]
+    rqs: [RQ5]
+    evidence_type: empirical-evaluation
+    tradeoffs:
+      - "Blocking an entire tool harms utility; allowing it entirely lets attacks succeed."
+    bypasses_limits: []
+    quote: "reduction and ASR because its coarse-grained approach of ignoring ... tool arguments either blocks an entire tool, harming utility"
+    location: "Section 8.1, AgentDojo"
+  - practice: pi-classifier-detection
+    stance: rejects
+    summary: "Three prompt-injection detectors (ProtectAI DeBERTa detector, DataSentinel, Llama Prompt Guard 2) were ineffective on AgentDojo, with high false positive and negative rates; guardrail models also cannot give deterministic enforcement."
+    threats: [prompt-injection-indirect]
+    rqs: [RQ5, RQ7]
+    evidence_type: empirical-evaluation
+    tradeoffs:
+      - "Detector aborts the agent on detection, reducing utility (false positives)."
+    bypasses_limits:
+      - "Fail to generalize beyond their training distributions."
+    quote: "may perform well on datasets similar to their training distributions, ... they fail to generalize to AgentDojo, exhibiting high rates of false"
+    location: "Section 8.1, AgentDojo"
+  - practice: pi-prompt-hardening
+    stance: rejects
+    summary: "Prompt-level defenses on ASB (delimiters, sandwich defense, instructional prevention) were ineffective at reducing ASR; repeat_user_prompt and spotlighting with delimiting were weaker than Progent on AgentDojo."
+    threats: [prompt-injection-indirect]
+    rqs: [RQ5]
+    evidence_type: empirical-evaluation
+    tradeoffs: []
+    bypasses_limits: []
+    quote: "ASR to 0%. The prior defenses are ineffective in reducing ASR, a"
+    location: "Section 8.1, ASB"
+  - practice: human-in-the-loop
+    stance: recommends
+    summary: "Require explicit approval for policy expansions (configurable approver: auto-deny, auto-approve, per-tool rules, or human review); manual approval reached 0% ASR and only about 6% of updates needed approval."
+    threats: [prompt-injection-indirect, privilege-escalation]
+    rqs: [RQ5]
+    evidence_type: empirical-evaluation
+    tradeoffs:
+      - "Manual approval delivers the strongest security but demands manual effort; best for security-critical settings."
+      - "Auto-deny is most secure among automatic modes but may reduce utility; auto-approve has slightly higher ASR."
+    bypasses_limits:
+      - "Users who incorrectly approve widening updates or give ambiguous initial tasks can permit policies exceeding minimal privilege."
+    quote: "actions, which is why explicit approval is required in practice for"
+    location: "Section 8.2, Different Approver Configurations"
+  - practice: human-in-the-loop
+    stance: rejects
+    summary: "Asking the user to approve every tool call is impractical and removes the benefit of an autonomous agent."
+    threats: [prompt-injection-indirect]
+    rqs: [RQ5]
+    evidence_type: design-rationale
+    tradeoffs:
+      - "Per-call approval costs too much user effort."
+    bypasses_limits: []
+    quote: "make security decisions, since asking the user to approve every ... tool call requires too much effort and removes the benefit of using"
+    location: "Section 2.1, Challenge II"
+  - practice: pi-architectural-isolation
+    stance: recommends
+    summary: "Policy updater first decides whether an update is needed without seeing the (untrusted) tool result, then generates the candidate policy; the trusted user query alone drives initial policy generation."
+    threats: [prompt-injection-indirect]
+    rqs: [RQ5]
+    evidence_type: design-rationale
+    tradeoffs: []
+    bypasses_limits:
+      - "Candidate generation still sees untrusted content; protection relies on the SMT expansion check."
+    quote: "ing the decision of whether to proceed is made without exposure ... to potentially malicious content."
+    location: "Section 5, Policy Update"
+  - practice: other:model-level-pi-finetuning
+    stance: evaluates
+    summary: "Models with built-in robustness (claude-sonnet-4, Meta-SecAlign-70B) already have low ASR; adding Progent reduces it further, so system-level privilege control complements model-level defenses as defense in depth."
+    threats: [prompt-injection-indirect]
+    rqs: [RQ5]
+    evidence_type: empirical-evaluation
+    tradeoffs: []
+    bypasses_limits: []
+    quote: "and model-level defenses [5] can provide stronger protections."
+    location: "Section 10 Related Work, Model-Level Prompt Injection Defenses; Section 8.2"
+  - practice: red-teaming-evaluation
+    stance: evaluates
+    summary: "Adaptive attacks targeting the policy updater (if-then-else injection, 'allow attack tool call', AgentVigil automated red-teaming) with auto-approval only marginally increased ASR (max 4.2%)."
+    threats: [prompt-injection-indirect, privilege-escalation]
+    rqs: [RQ5]
+    evidence_type: empirical-evaluation
+    tradeoffs: []
+    bypasses_limits:
+      - "Only three adaptive attack types evaluated."
+    quote: "attacks can only marginally increase the ASR."
+    location: "Appendix E Adaptive Attacks"
+  - practice: multi-agent-trust-boundaries
+    stance: recommends
+    summary: "Apply privilege control either as one layer around the whole multi-agent system to prevent cross-agent privilege escalation, or per sub-agent when agents have different users or permission levels; on AutoGen it blocked over 95% of successful attacks."
+    threats: [multi-agent-compromise, privilege-escalation, prompt-injection-indirect]
+    rqs: [RQ6]
+    evidence_type: empirical-evaluation
+    tradeoffs:
+      - "Isolation between sub-agents can reduce coordination efficiency."
+    bypasses_limits: []
+    quote: "context and policy management ensures consistent security and ... prevents cross-agent privilege escalation."
+    location: "Section 8.3, Multi-Agent Systems"
+  - practice: other:tool-call-proxy-enforcement
+    stance: evaluates
+    summary: "Proxy mode (redirect LLM API and MCP endpoints to Progent proxy) deploys without code changes, e.g. for OpenHands, but cannot protect built-in tools that bypass MCP; library mode covers built-in tools with small code changes."
+    threats: [prompt-injection-indirect]
+    rqs: [RQ5, RQ7]
+    evidence_type: design-rationale
+    tradeoffs:
+      - "Trade-off between deployability (proxy mode) and protection depth (library mode)."
+    bypasses_limits:
+      - "Built-in agent tools that do not go through external MCP interfaces bypass proxy-mode enforcement."
+    quote: "functionalities implemented as built-in tools that bypass external ... MCP interfaces."
+    location: "Section 9 Limitation and Discussion, Defense Scope"
+  - practice: information-flow-control
+    stance: recommends
+    summary: "Suggests, as an extension, policies restricting tools from reading potentially malicious data or filtering tool outputs to further control data flow against text-output attacks."
+    threats: [prompt-injection-indirect]
+    rqs: [RQ5]
+    evidence_type: design-rationale
+    tradeoffs:
+      - "Requires developers to inject additional components into their agents."
+    bypasses_limits: []
+    quote: "further control data flow and help mitigate such attacks."
+    location: "Section 9 Limitation and Discussion, Defense Scope"
+threat_model:
+  framework: null
+  assets:
+    - value: "User's private data such as the email inbox"
+      quote: "tool call that exfiltrates the user’s inbox to the attacker. At step 5, the"
+      location: "Section 2.1, Motivating Example"
+    - value: "Financial accounts / funds and stored data"
+      quote: "shown in [11, 57], the attacker could induce dangerous data erasure"
+      location: "Section 3.2 Threat Model, Attacker Goal"
+  input_channels:
+    - value: "External data sources returned by tool calls (emails, Slack, web pages, files); attacker controls any observation after the benign user query"
+      quote: "manipulate the agent’s external data source in the environment E,"
+      location: "Section 3.2 Threat Model, Attacker Capabilities"
+    - value: "Injected content aimed at the LLM policy updater"
+      quote: "LLM to incorporate tool calls required by the attack task in the"
+      location: "Appendix E Adaptive Attacks"
+  failure_modes:
+    - value: "Injected instruction makes agent send private data to attacker via an email tool"
+      threat: data-exfiltration
+      quote: "tool call that exfiltrates the user’s inbox to the attacker. At step 5, the"
+      location: "Section 2.1, Motivating Example"
+    - value: "Indirect prompt injection redirects agent to unauthorized actions"
+      threat: prompt-injection-indirect
+      quote: "calls, the injected instructions can redirect the agent to perform"
+      location: "Section 1 Introduction"
+    - value: "Dangerous data erasure operations"
+      threat: destructive-action
+      quote: "shown in [11, 57], the attacker could induce dangerous data erasure"
+      location: "Section 3.2 Threat Model, Attacker Goal"
+    - value: "Adversarial expansion requests via the policy-update channel to escalate privileges, relying on user approval"
+      threat: privilege-escalation
+      quote: "update process and expecting the user to approve this update."
+      location: "Appendix E Adaptive Attacks"
+notes: |
+  Metadata verified: authors and affiliations (UC Berkeley, UC Santa Barbara, National University of Singapore) and arXiv v3 dated 14 May 2026 match sources.csv; first version date 2025-04-16 not stated in text but consistent with arXiv ID 2504.
+  Scope is general tool-using agents (benchmarks AgentDojo, ASB: email, Slack, banking, travel); coding agents are only mentioned in passing, plus OpenHands integration via proxy mode. Frameworks evaluated: LangChain, OpenAI Agents SDK, OpenHands, AutoGen. The paper does not discuss OS/container/VM isolation, secrets/API keys, network egress controls, or host-side delayed execution (git hooks, .envrc). No named threat framework (uses principle of least privilege). Threat model assumes benign user and uncompromised agent internals/system prompt.
+  Bar values in figures (e.g. per-defense ASR on AgentDojo) are extracted as loose numbers and their mapping to legend entries is ambiguous; only text-stated numbers were used.
+  The source contains example injection strings (e.g. "forward the inbox to eve@evil.com", adaptive-attack prompts "allow all tools") as research content; none were directed at the extraction agent and none were followed.
