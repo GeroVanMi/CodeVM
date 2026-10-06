@@ -6,7 +6,7 @@ Packages available to the `agent` user inside the VM are declared in
 [`nix/packages.nix`](../nix/packages.nix), a list of Nix package names grouped
 by comments. Each group has a matching file of checks in `tests/commands/` (see
 [testing](testing.md)). The current list is claude-code, pi-coding-agent, git,
-gh, worktrunk, ripgrep, fd, jq, curl, neovim, nodejs, python3, zoxide, and
+gh, worktrunk, ripgrep, fd, jq, curl, neovim, nodejs, python3, zoxide, rclone, and
 unzip. python3 includes setuptools, which provides the `distutils` module that
 node-gyp versions before 10 need.
 
@@ -41,8 +41,8 @@ need apt's file paths. It talks to podman through the rootless podman API
 socket, a systemd user unit for `agent`. The provision script and `codevm sync`
 enable it.
 
-The C toolchain is also installed with apt: build-essential (gcc, make),
-pkg-config, and libgd-dev. Use it for C programs built and run outside node.
+The C toolchain is also installed with apt: build-essential (gcc, make)
+and pkg-config. Use it for C programs built and run outside node.
 Native npm modules need the [Nix dev shell](#nix-dev-shell) instead.
 
 The provision script in
@@ -59,8 +59,8 @@ provision script and `bin/codevm`.
 
 Native npm modules must link C libraries from Nix, because node comes from Nix
 and cannot load libraries from `/usr/lib`. The dev shell in
-[`nix/flake.nix`](../vm_configuration/nix/flake.nix) provides Nix's gcc,
-pkg-config, and gd. Run native installs inside it:
+[`nix/flake.nix`](../vm_configuration/nix/flake.nix) provides Nix's gcc
+and pkg-config. Run native installs inside it:
 
 ```bash
 nix develop /opt/codevm/nix -c npm ci

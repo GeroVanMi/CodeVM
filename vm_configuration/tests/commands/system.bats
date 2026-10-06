@@ -30,16 +30,3 @@ load ../helpers
   run in_vm 'cd "$(mktemp -d)" && echo "int main(void){return 0;}" > t.c && timeout 60 gcc t.c -o t && ./t'
   [ "$status" -eq 0 ]
 }
-
-# Built like node-gd: plain -lgd, no flags from pkg-config.
-@test "gd headers and library" {
-  run in_vm 'cd "$(mktemp -d)" && printf "#include <gd.h>\nint main(void){gdImagePtr i = gdImageCreate(1, 1); gdImageDestroy(i); return 0;}\n" > t.c && timeout 60 gcc t.c -o t -lgd && ./t'
-  [ "$status" -eq 0 ]
-}
-
-# node-gd enables formats from this list and silently drops them if it fails.
-@test "pkg-config resolves gdlib with its dependencies" {
-  run in_vm 'pkg-config --static --libs-only-l gdlib'
-  [ "$status" -eq 0 ]
-  [[ "$output" == *-lpng* ]]
-}

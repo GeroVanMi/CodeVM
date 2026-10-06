@@ -17,6 +17,16 @@ load ../helpers
   [ "$status" -eq 0 ]
 }
 
+@test "bat" {
+  run in_vm 'timeout 10 bat --version'
+  [ "$status" -eq 0 ]
+}
+
+@test "eza" {
+  run in_vm 'timeout 10 eza --version'
+  [ "$status" -eq 0 ]
+}
+
 @test "curl" {
   run in_vm 'timeout 10 curl --version'
   [ "$status" -eq 0 ]
@@ -29,5 +39,10 @@ load ../helpers
 
 @test "unzip" {
   run in_vm 'timeout 10 unzip -v'
+  [ "$status" -eq 0 ]
+}
+
+@test "rclone" {
+  run in_vm 'timeout 10 rclone version'
   [ "$status" -eq 0 ]
 }

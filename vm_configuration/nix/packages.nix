@@ -5,13 +5,13 @@ pkgs: with pkgs; [
   # vcs
   git gh worktrunk
   # cli
-  ripgrep fd jq curl zoxide unzip
+  ripgrep fd jq bat eza curl zoxide unzip rclone
   # containers (podman itself is apt, see lima/codevm.yaml)
   docker-compose
   # editor
   neovim
   # languages (setuptools provides distutils for node-gyp < 10)
   nodejs pnpm (python3.withPackages (ps: [ ps.setuptools ]))
-  # native build deps, mirroring apt's pkg-config + libgd-dev (gd.dev has headers/.pc)
-  pkg-config gd gd.dev
+  # native build deps, mirroring apt's pkg-config
+  pkg-config
 ]
