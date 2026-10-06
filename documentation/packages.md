@@ -3,10 +3,12 @@
 ## Nix packages
 
 Packages available to the `agent` user inside the VM are declared in
-[`nix/packages.nix`](../nix/packages.nix), a list of Nix package names grouped by comments. Each group has a matching
-file of checks in `tests/commands/` (see [testing](testing.md)).
-The current list is claude-code, pi-coding-agent, git, gh, ripgrep, fd, jq,
-curl, neovim, nodejs, python3, zoxide, unzip, and gcc.
+[`nix/packages.nix`](../nix/packages.nix), a list of Nix package names grouped
+by comments. Each group has a matching file of checks in `tests/commands/` (see
+[testing](testing.md)). The current list is claude-code, pi-coding-agent, git,
+gh, worktrunk, ripgrep, fd, jq, curl, neovim, nodejs, python3, zoxide, and
+unzip. python3 includes setuptools, which provides the `distutils` module that
+node-gyp versions before 10 need.
 
 To add or remove a package, edit `nix/packages.nix` on the host and run
 `codevm sync` (see [usage](usage.md#sync)). Sync resets the `agent` user's Nix
@@ -27,6 +29,48 @@ already present.
 The current entry installs codegraph to `~/.local/bin` using its own install
 script. It is marked in the script for a move to `packages.nix` once it is
 available in Nix's package repository, nixpkgs.
+
+## System packages
+
+Podman is installed with apt, not Nix, together with its rootless helpers uidmap
+and passt. The `agent` user runs podman rootless, without sudo.
+
+`podman compose` runs docker-compose, which is installed with Nix from
+`packages.nix`. Unlike podman, docker-compose is only a client, so it doesn't
+need apt's file paths. It talks to podman through the rootless podman API
+socket, a systemd user unit for `agent`. The provision script and `codevm sync`
+enable it.
+
+The C toolchain is also installed with apt: build-essential (gcc, make),
+pkg-config, and libgd-dev. Use it for C programs built and run outside node.
+Native npm modules need the [Nix dev shell](#nix-dev-shell) instead.
+
+The provision script in
+[`lima/codevm.yaml`](../vm_configuration/lima/codevm.yaml) installs these
+packages when the VM is created, and `codevm sync` installs any that are
+missing. Sync also enables lingering for `agent`, which keeps its systemd user
+instance running. Checks for these packages live in
+`tests/commands/system.bats`.
+
+To add another C library, add its `-dev` package to the apt lists in both the
+provision script and `bin/codevm`.
+
+## Nix dev shell
+
+Native npm modules must link C libraries from Nix, because node comes from Nix
+and cannot load libraries from `/usr/lib`. The dev shell in
+[`nix/flake.nix`](../vm_configuration/nix/flake.nix) provides Nix's gcc,
+pkg-config, and gd. Run native installs inside it:
+
+```bash
+nix develop /opt/codevm/nix -c npm ci
+```
+
+A plain `npm ci` still builds, against the apt libraries, but the module then
+fails to load. Sync registers the dev shell as a garbage collection root, so the
+libraries that built modules link to stay installed. To add a C library, add it
+to `buildInputs` in the dev shell. Checks live in
+`tests/commands/devshell.bats`.
 
 ## Bumping the Nix lock file
 

@@ -12,7 +12,12 @@ load ../helpers
   [ "$status" -eq 0 ]
 }
 
-@test "gcc" {
-  run in_vm 'cd "$(mktemp -d)" && echo "int main(void){return 0;}" > t.c && timeout 60 gcc t.c -o t && ./t'
+@test "python3 distutils (node-gyp < 10)" {
+  run in_vm 'timeout 10 python3 -c "import distutils"'
+  [ "$status" -eq 0 ]
+}
+
+@test "pnpm" {
+  run in_vm 'timeout 10 pnpm --version'
   [ "$status" -eq 0 ]
 }

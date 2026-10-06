@@ -38,6 +38,18 @@ To allow additional destinations, add rules to the allowlist section marked in
 `firewall/codevm.nft`, above the block rules, then run `codevm sync` to apply
 the change.
 
+## Containers
+
+The `agent` user runs containers with rootless podman. Container root maps to an
+unprivileged range of user IDs owned by `agent`, so a container gains no
+privileges beyond those of `agent`. Container traffic leaves through pasta, a
+user-mode network stack running as `agent`, so the [egress firewall](#firewall)
+applies to it.
+
+The podman API socket runs as `agent` in `/run/user/<uid>/podman/`, for
+docker-compose. It gives a caller the same rootless access as the `podman`
+command, nothing more.
+
 ## Port forwarding
 
 Lima's default port forwarding applies: ports opened by services inside the VM

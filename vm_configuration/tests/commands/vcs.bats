@@ -11,3 +11,8 @@ load ../helpers
   run in_vm 'timeout 10 gh --version'
   [ "$status" -eq 0 ]
 }
+
+@test "worktrunk" {
+  run in_vm 'timeout 10 wt --version'
+  [ "$status" -eq 0 ]
+}

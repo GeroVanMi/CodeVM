@@ -28,7 +28,9 @@ resolves to `codevm`. A run can regenerate `nix/flake.lock` if it is missing.
 A Command Check is a command that must succeed when run as the `agent` user
 inside a freshly synced Test VM. Checks live in `tests/commands/`, one file per
 group in [`nix/packages.nix`](../nix/packages.nix), plus `extras.bats` for
-[`extra-packages.sh`](../extra-packages.sh). Every package has at least one
+[`extra-packages.sh`](../extra-packages.sh) and `system.bats` for
+[system packages](packages.md#system-packages), and `devshell.bats` for the
+[Nix dev shell](packages.md#nix-dev-shell). Every package has at least one
 check.
 
 Each check uses the `in_vm` helper from `tests/helpers.bash`, which runs its
@@ -52,5 +54,5 @@ command fails instead of stalling the suite.
 ## VM name override
 
 `bin/codevm` reads the VM name from `CODEVM_NAME` (default `codevm`). Setting
-`CODEVM_DESTROY_YES=1` skips the destroy confirmation, but only when the name
-is not `codevm`.
+`CODEVM_DESTROY_YES=1` skips the destroy confirmation, but only when the name is
+not `codevm`.

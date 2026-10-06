@@ -16,5 +16,11 @@
         name = "codevm-env";
         paths = import ./packages.nix pkgs;
       };
+
+      # Native npm builds against Nix's node: `nix develop /opt/codevm/nix -c npm ci`.
+      devShells.${system}.default = pkgs.mkShell {
+        nativeBuildInputs = [ pkgs.pkg-config ];
+        buildInputs = [ pkgs.gd ];
+      };
     };
 }

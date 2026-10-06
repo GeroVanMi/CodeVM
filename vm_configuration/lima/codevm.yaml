@@ -33,9 +33,13 @@ provision:
     #!/bin/bash
     set -eux -o pipefail
 
-    # 1. Base packages
+    # 1. Base packages. podman comes from apt, not Nix: rootless mode needs the
+    #    setuid newuidmap/newgidmap (uidmap), and Ubuntu's AppArmor userns
+    #    profiles only match /usr/bin/podman, /usr/bin/crun, etc.
+    #    The C toolchain and libraries come from apt too: native npm modules
+    #    (node-gyp) expect headers and libraries in /usr/include and /usr/lib.
     missing=()
-    for p in nftables git curl; do
+    for p in nftables git curl podman uidmap passt build-essential pkg-config libgd-dev; do
       dpkg-query -W -f='${Status}' "$p" 2>/dev/null | grep -q 'install ok installed' || missing+=("$p")
     done
     if [ "${#missing[@]}" -gt 0 ]; then
@@ -47,6 +51,11 @@ provision:
     # 2. Unprivileged agent user (no sudo/admin)
     id agent >/dev/null 2>&1 || useradd -m -s /bin/bash agent
     install -d -o agent -g agent /home/agent/projects
+    # Systemd user instance (/run/user/<uid>, user bus) for rootless podman,
+    # since `sudo -u agent` never opens a login session.
+    loginctl enable-linger agent
+    # Rootless podman API socket, used by docker-compose via `podman compose`.
+    systemctl --user -M agent@ enable --now podman.socket
 
     # 2b. No sudo pty relay when root/admin runs commands as agent (Warp DCS hook).
     #     Validated with visudo before install so a bad file can't break sudo.

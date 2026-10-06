@@ -60,6 +60,7 @@ SH
 
   # 3. Install into /opt/codevm (root-owned, agent read-only)
   # 4. Firewall (mirrors the provision script in lima/codevm.yaml)
+  # 4b. apt packages (podman, C toolchain) + linger + podman API socket (mirrors the provision script)
   vm_admin <<SH
 set -euo pipefail
 sudo rsync -a --delete --exclude '/lost+found' $STAGE/ /opt/codevm/
@@ -76,6 +77,16 @@ printf '%s\\n' '# codevm-managed: no pty relay for commands run as agent (Warp)'
 sudo visudo -cf "\$t" >/dev/null
 sudo install -m 0440 -o root -g root "\$t" /etc/sudoers.d/90-codevm-agent-nopty
 rm -f "\$t"
+missing=()
+for p in podman uidmap passt build-essential pkg-config libgd-dev; do
+  dpkg-query -W -f='\${Status}' "\$p" 2>/dev/null | grep -q 'install ok installed' || missing+=("\$p")
+done
+if [ "\${#missing[@]}" -gt 0 ]; then
+  sudo DEBIAN_FRONTEND=noninteractive apt-get update
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "\${missing[@]}"
+fi
+sudo loginctl enable-linger agent
+sudo systemctl --user -M agent@ enable --now podman.socket
 SH
 
   # 5a. First run only: generate flake.lock in a writable copy, copy it back to host.
@@ -98,11 +109,13 @@ sudo rm -rf /tmp/codevm-lock
 SH
   fi
 
-  # 5b-7. As agent: reset profile, extras, shell hook, git identity.
+  # 5b-7. As agent: reset profile, dev shell, extras, shell hook, git identity.
   vm_agent <<'SH'
 set -euo pipefail
 nix profile remove --regex '.*' 2>/dev/null || true
 nix profile add --no-write-lock-file /opt/codevm/nix#default
+# GC root for the dev shell: addons built in it link its store paths.
+nix develop --no-write-lock-file --profile ~/.local/state/nix/profiles/codevm-dev /opt/codevm/nix -c true
 /opt/codevm/extra-packages.sh
 install -d -m 0755 ~/.bashrc.d
 install -m 0644 /opt/codevm/home/bashrc.d/codevm.sh ~/.bashrc.d/codevm.sh
