@@ -3,7 +3,7 @@ pkgs: with pkgs; [
   # agents
   claude-code pi-coding-agent
   # vcs
-  git gh worktrunk
+  git gh worktrunk lazygit
   # cli
   ripgrep fd jq bat eza curl zoxide unzip rclone
   # containers (podman itself is apt, see lima/codevm.yaml)

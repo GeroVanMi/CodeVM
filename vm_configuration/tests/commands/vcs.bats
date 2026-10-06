@@ -16,3 +16,8 @@ load ../helpers
   run in_vm 'timeout 10 wt --version'
   [ "$status" -eq 0 ]
 }
+
+@test "lazygit" {
+  run in_vm 'timeout 10 lazygit --version'
+  [ "$status" -eq 0 ]
+}

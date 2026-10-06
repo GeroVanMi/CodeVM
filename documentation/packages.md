@@ -6,7 +6,7 @@ Packages available to the `agent` user inside the VM are declared in
 [`nix/packages.nix`](../nix/packages.nix), a list of Nix package names grouped
 by comments. Each group has a matching file of checks in `tests/commands/` (see
 [testing](testing.md)). The current list is claude-code, pi-coding-agent, git,
-gh, worktrunk, ripgrep, fd, jq, curl, neovim, nodejs, python3, zoxide, rclone, and
+gh, worktrunk, lazygit, ripgrep, fd, jq, curl, neovim, nodejs, python3, zoxide, rclone, ffmpeg, and
 unzip. python3 includes setuptools, which provides the `distutils` module that
 node-gyp versions before 10 need.
 
