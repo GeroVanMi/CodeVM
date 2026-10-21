@@ -3,7 +3,7 @@
 ## Nix packages
 
 Packages available to the `agent` user inside the VM are declared in
-[`nix/packages.nix`](../nix/packages.nix), a list of Nix package names grouped
+[`nix/packages.nix`](../vm_configuration/nix/packages.nix), a list of Nix package names grouped
 by comments. Each group has a matching file of checks in `tests/commands/` (see
 [testing](testing.md)). The current list is claude-code, pi-coding-agent, git,
 gh, worktrunk, lazygit, ripgrep, fd, jq, curl, neovim, nodejs, python3, zoxide, rclone, ffmpeg, and
@@ -20,7 +20,7 @@ added to the list fails to build.
 
 ## Extra, non-Nix packages
 
-[`extra-packages.sh`](../extra-packages.sh) installs tools that are not
+[`extra-packages.sh`](../vm_configuration/extra-packages.sh) installs tools that are not
 available through Nix. It runs as the `agent` user during sync, after the Nix
 profile is applied. Each entry checks whether the tool is already installed
 before running its installer, so re-running the script is a no-op for anything
@@ -74,8 +74,8 @@ to `buildInputs` in the dev shell. Checks live in
 
 ## Bumping the Nix lock file
 
-[`nix/flake.lock`](../nix/flake.lock) pins the exact versions of packages
-resolved by [`nix/flake.nix`](../nix/flake.nix). Sync never updates an existing
+[`nix/flake.lock`](../vm_configuration/nix/flake.lock) pins the exact versions of packages
+resolved by [`nix/flake.nix`](../vm_configuration/nix/flake.nix). Sync never updates an existing
 lock file; it only generates one if none exists yet.
 
 Bumping the lock to pick up newer package versions is currently a manual step:

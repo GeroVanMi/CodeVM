@@ -6,4 +6,4 @@
 - When fixing a missing or broken command, add a failing check in `tests/commands/` first.
 - Run `bin/codevm-test stop` when finished.
 
-See [documentation/testing.md](documentation/testing.md).
+See [documentation/testing.md](../documentation/testing.md).

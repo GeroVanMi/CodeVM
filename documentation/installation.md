@@ -30,7 +30,7 @@ codevm
 ```
 
 On the first run, this creates the `codevm` Lima VM from
-[`lima/codevm.yaml`](../lima/codevm.yaml), then runs a sync that installs the
+[`lima/codevm.yaml`](../vm_configuration/lima/codevm.yaml), then runs a sync that installs the
 Nix environment, the firewall, and the shell configuration inside the VM. See
 [usage](usage.md#sync) for what sync does. Once the sync finishes, `codevm`
 drops you into a shell inside the VM, logged in as the `agent` user in

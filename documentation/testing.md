@@ -27,8 +27,8 @@ resolves to `codevm`. A run can regenerate `nix/flake.lock` if it is missing.
 
 A Command Check is a command that must succeed when run as the `agent` user
 inside a freshly synced Test VM. Checks live in `tests/commands/`, one file per
-group in [`nix/packages.nix`](../nix/packages.nix), plus `extras.bats` for
-[`extra-packages.sh`](../extra-packages.sh) and `system.bats` for
+group in [`nix/packages.nix`](../vm_configuration/nix/packages.nix), plus `extras.bats` for
+[`extra-packages.sh`](../vm_configuration/extra-packages.sh) and `system.bats` for
 [system packages](packages.md#system-packages), and `devshell.bats` for the
 [Nix dev shell](packages.md#nix-dev-shell). Every package has at least one
 check.

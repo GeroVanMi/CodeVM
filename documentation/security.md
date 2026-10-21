@@ -10,7 +10,7 @@ access is restricted by an egress firewall.
 ## No host mounts
 
 The VM has zero host mounts, configured as `mounts: []` in
-[`lima/codevm.yaml`](../lima/codevm.yaml). Code enters or leaves the VM only
+[`lima/codevm.yaml`](../vm_configuration/lima/codevm.yaml). Code enters or leaves the VM only
 through git clone, pull, and push. An agent running inside the VM cannot read or
 write any file on the host filesystem.
 
@@ -25,7 +25,7 @@ configuration from inside its own session.
 
 ## Firewall
 
-The egress firewall, defined in [`firewall/codevm.nft`](../firewall/codevm.nft),
+The egress firewall, defined in [`firewall/codevm.nft`](../vm_configuration/firewall/codevm.nft),
 applies to outbound traffic from the VM. It allows outbound traffic by default,
 but drops destinations in the private IPv4 ranges (RFC1918), link-local
 addresses, and the Carrier Grade NAT range, as well as their IPv6 equivalents.

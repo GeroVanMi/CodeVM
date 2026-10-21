@@ -14,7 +14,7 @@ in `~/projects`.
 
 Pushes the repository's configuration into the running VM and applies it: Nix
 packages, the firewall rules, the shell configuration, and the git identity from
-[`config.env`](../config.env). See [packages](packages.md) for what a sync
+[`config.env`](../vm_configuration/config.env). See [packages](packages.md) for what a sync
 changes about the installed package set. Sync does not enter a shell; it exits
 once the VM is up to date.
 
