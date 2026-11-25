@@ -6,9 +6,10 @@ Packages available to the `agent` user inside the VM are declared in
 [`nix/packages.nix`](../vm_configuration/nix/packages.nix), a list of Nix package names grouped
 by comments. Each group has a matching file of checks in `tests/commands/` (see
 [testing](testing.md)). The current list is claude-code, pi-coding-agent, git,
-gh, worktrunk, lazygit, ripgrep, fd, jq, curl, neovim, nodejs, python3, zoxide, rclone, ffmpeg, and
-unzip. python3 includes setuptools, which provides the `distutils` module that
-node-gyp versions before 10 need.
+gh, worktrunk, lazygit, ripgrep, fd, jq, bat, eza, curl, zoxide, unzip, rclone,
+exoscale-cli, opentofu, docker-compose, neovim, nodejs, pnpm,
+python3, and pkg-config. python3 includes setuptools, which provides the
+`distutils` module that node-gyp versions before 10 need.
 
 To add or remove a package, edit `nix/packages.nix` on the host and run
 `codevm sync` (see [usage](usage.md#sync)). Sync resets the `agent` user's Nix

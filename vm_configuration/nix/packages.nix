@@ -6,6 +6,8 @@ pkgs: with pkgs; [
   git gh worktrunk lazygit
   # cli
   ripgrep fd jq bat eza curl zoxide unzip rclone
+  # cloud
+  exoscale-cli opentofu
   # containers (podman itself is apt, see lima/codevm.yaml)
   docker-compose
   # editor
